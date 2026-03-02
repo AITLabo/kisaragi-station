@@ -134,44 +134,46 @@ public class KisaragiGateBuilder
 
         // ─────────────────────────────────────────────
         // 6b. 入口絞り壁 + 南北仕切り壁 + 職員待機所
-        //     南絞り壁: Z=-8〜-2 (6m, 1m短縮で職員待機所ニッチ確保)
-        //     北絞り壁: Z=+7〜+14 (7m)
+        //     南絞り壁: Z=-8〜-1 (7m, SouthDividerに密着)
+        //     北絞り壁: Z=+8〜+14 (6m, 1m短縮 → Z=+7〜+8 が角ニッチ)
         //     開口: Z=-1〜+7 (8m)
+        //     職員待機所: 北角ニッチ Z=+7〜+8 / X=4.5〜7.5
         // ─────────────────────────────────────────────
-        const float ENTRY_WALL_S = 6.0f;   // 南: 1m短縮
-        const float ENTRY_WALL_N = 7.0f;   // 北
+        const float ENTRY_WALL_S = 7.0f;   // 南: SouthDividerに密着
+        const float ENTRY_WALL_N = 6.0f;   // 北: 1m短縮で角ニッチ
         float entryWallX = GATE_X_START + WALL_T;           // X=4.65
-        // 南絞り壁 (Z=-8〜-2)
+        // 南絞り壁 (Z=-8〜-1)
         Cube("Gate_EntryWallS", gateRoot,
             new Vector3(entryWallX, FLOOR_Y + BLDG_H * 0.5f,
-                        GATE_Z_START + ENTRY_WALL_S * 0.5f),            // Z=-5.0
+                        GATE_Z_START + ENTRY_WALL_S * 0.5f),            // Z=-4.5
             new Vector3(WALL_T * 2, BLDG_H, ENTRY_WALL_S), concMat);
-        // 北絞り壁 (Z=+7〜+14)
+        // 北絞り壁 (Z=+8〜+14)
         Cube("Gate_EntryWallN", gateRoot,
             new Vector3(entryWallX, FLOOR_Y + BLDG_H * 0.5f,
-                        GATE_Z_END - ENTRY_WALL_N * 0.5f),              // Z=10.5
+                        GATE_Z_END - ENTRY_WALL_N * 0.5f),              // Z=11.0
             new Vector3(WALL_T * 2, BLDG_H, ENTRY_WALL_N), concMat);
 
         // 北仕切り壁（Z=+7、出口壁まで横断）
-        float dividerNZ = GATE_Z_END - ENTRY_WALL_N;                    // +7.0
+        float dividerNZ = GATE_Z_END - ENTRY_WALL_N - 1.0f;             // +7.0
         Cube("Gate_NorthDivider", gateRoot,
             new Vector3(GATE_X_CTR, FLOOR_Y + BLDG_H * 0.5f,
                         dividerNZ + WALL_T * 0.5f),
             new Vector3(BLDG_DEPTH, BLDG_H, WALL_T), concMat);
 
         // 南仕切り壁（Z=-1、出口壁まで横断）
-        float dividerSZ = GATE_Z_START + ENTRY_WALL_S + 1.0f;          // -8+6+1 = -1
+        float dividerSZ = GATE_Z_START + ENTRY_WALL_S;                  // -8+7 = -1
         Cube("Gate_SouthDivider", gateRoot,
             new Vector3(GATE_X_CTR, FLOOR_Y + BLDG_H * 0.5f,
                         dividerSZ - WALL_T * 0.5f),
             new Vector3(BLDG_DEPTH, BLDG_H, WALL_T), concMat);
 
-        // 職員待機所（南ニッチ Z=-2〜-1 / プラットフォーム境界側）
+        // 職員待機所（北角ニッチ Z=+7〜+8 / プラットフォーム境界側）
         {
             float staffW  = 3.0f;
+            float nicheS  = dividerNZ;                                   // +7.0
+            float nicheN  = GATE_Z_END - ENTRY_WALL_N;                  // +8.0
+            float staffCZ = (nicheS + nicheN) * 0.5f;                   // +7.5
             float staffCX = GATE_X_START + staffW * 0.5f;               // X=6.0
-            float nicheSZ = GATE_Z_START + ENTRY_WALL_S;                // -2.0 (ニッチ南端)
-            float staffCZ = (nicheSZ + dividerSZ) * 0.5f;               // -1.5
             var   staffMat = GetOrCreateMat("Mat_StaffRoom", new Color(0.35f, 0.33f, 0.31f));
             Cube("StaffRoom", gateRoot,
                 new Vector3(staffCX, FLOOR_Y + 1.4f, staffCZ),
