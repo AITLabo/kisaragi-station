@@ -118,7 +118,7 @@ public class KisaragiPrototypeAnomalyBuilder
 
         // 7. ポスター - poster  (階段内壁・電話ボックス横 Z=17)
         var poster = CreateBase("ポスター_poster", "poster",
-            new Vector3(3.9f, 1.6f, 20f), new Vector3(0.05f, 1.1f, 0.78f),
+            new Vector3(4.4f, 1.6f, 20f), new Vector3(0.05f, 1.1f, 0.78f),
             new Color(0.88f, 0.83f, 0.73f), root, layer);
         AddTMP(poster, "観光案内", 0.08f, new Color(0.2f, 0.2f, 0.4f), new Vector3(0.04f, 0.25f, 0));
         CreateChild(poster, "FaceBlank", new Vector3(0.03f, -0.08f, 0), new Vector3(0.02f, 0.48f, 0.38f), new Color(0.88f, 0.83f, 0.73f));
