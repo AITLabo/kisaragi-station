@@ -87,12 +87,34 @@ public class KisaragiPrototypeAnomalyBuilder
             AddHint(bench, "誰かの荷物が残されている...持ち主はどこに？");
         }
 
-        // 6. 改札 - gate  (ホーム端)
-        var gate = CreateBase("改札_gate", "gate",
-            new Vector3(0f, 0.85f, 19f), new Vector3(0.8f, 1.2f, 0.12f),
-            new Color(0.68f, 0.70f, 0.73f), root, layer);
-        CreateChild(gate, "GateBar", new Vector3(0.45f, 0, -0.08f), new Vector3(0.9f, 0.04f, 0.04f), new Color(0.5f, 0.52f, 0.55f));
-        AddHint(gate, "改札が誰もいないのに全部開いている...");
+        // 6. 改札 - gate  → GateBuilder の KaisatsuBoard にイベントを付与
+        {
+            // GateRoot 配下の KaisatsuBoard を検索（GateBuilder で命名済み）
+            var gateRootGo = GameObject.Find("GateRoot");
+            GameObject eventGate = null;
+            if (gateRootGo != null)
+            {
+                foreach (Transform child in gateRootGo.transform)
+                {
+                    if (child.name == "KaisatsuBoard")
+                    {
+                        eventGate = child.gameObject;
+                        break; // 最初の1枚（Z=-6 付近）にイベントを付与
+                    }
+                }
+            }
+            if (eventGate == null)
+            {
+                // フォールバック: 改札エリア内に standalone Cube
+                Debug.LogWarning("[AnomalyBuilder] KaisatsuBoard が見つかりません。Cube で代替します。");
+                eventGate = CreateBase("改札_gate", "gate",
+                    new Vector3(4.9f, 0.85f, -6f), new Vector3(0.8f, 1.2f, 0.12f),
+                    new Color(0.68f, 0.70f, 0.73f), root, layer);
+                CreateChild(eventGate, "GateBar", new Vector3(0.45f, 0, -0.08f), new Vector3(0.9f, 0.04f, 0.04f), new Color(0.5f, 0.52f, 0.55f));
+            }
+            SetCorrectObject(eventGate, "gate", layer);
+            AddHint(eventGate, "改札が誰もいないのに全部開いている...");
+        }
 
         // 7. ポスター - poster  (左壁)
         var poster = CreateBase("ポスター_poster", "poster",
@@ -102,14 +124,41 @@ public class KisaragiPrototypeAnomalyBuilder
         CreateChild(poster, "FaceBlank", new Vector3(-0.03f, -0.08f, 0), new Vector3(0.02f, 0.48f, 0.38f), new Color(0.88f, 0.83f, 0.73f));
         AddHint(poster, "ポスターの人物の顔が...消えている");
 
-        // 8. 公衆電話 - phone  (右壁)
-        var phone = CreateBase("公衆電話_phone", "phone",
-            new Vector3(1.0f, 0.675f, 12f), new Vector3(0.48f, 0.85f, 0.38f),
-            new Color(0.08f, 0.38f, 0.13f), root, layer);
-        CreateChild(phone, "Receiver", new Vector3(-0.05f, 0.28f, -0.22f), new Vector3(0.28f, 0.07f, 0.07f), new Color(0.06f, 0.28f, 0.09f));
-        var phoneAudio = phone.AddComponent<AudioSource>();
-        phoneAudio.loop = true; phoneAudio.spatialBlend = 1f; phoneAudio.maxDistance = 8f;
-        AddHint(phone, "電話が鳴っている...出るべきか？");
+        // 8. 公衆電話 - phone  (右壁) ← phone.fbx に入れ替え
+        {
+            const string PHONE_FBX = "Assets/Models/phone.fbx";
+            var phoneAsset = AssetDatabase.LoadAssetAtPath<GameObject>(PHONE_FBX);
+            GameObject phone;
+            if (phoneAsset != null)
+            {
+                phone = Object.Instantiate(phoneAsset);
+                phone.name = "公衆電話_phone";
+                phone.transform.SetParent(root.transform);
+                phone.transform.position = new Vector3(4.7f, 0.25f, 16f); // 内壁(X≈4.5)沿い・階段手前
+                phone.transform.rotation = Quaternion.Euler(0f, -90f, 0f); // 外側（+X）向き
+                phone.transform.localScale = new Vector3(1.3f, 1.3f, 1.3f); // 少し大きく
+                phone.layer = layer;
+                // FBX 不要コンポーネント除去（Camera・Light）
+                foreach (var c in phone.GetComponentsInChildren<Camera>(true)) Object.DestroyImmediate(c);
+                foreach (var l in phone.GetComponentsInChildren<Light>(true))  Object.DestroyImmediate(l);
+                // インタラクション用 BoxCollider をルートに追加
+                var phoneCol = phone.AddComponent<BoxCollider>();
+                phoneCol.size   = new Vector3(0.48f, 0.85f, 0.38f); // 元のCubeサイズに合わせる
+                phoneCol.center = new Vector3(0f, 0.425f, 0f);
+            }
+            else
+            {
+                Debug.LogWarning("[AnomalyBuilder] " + PHONE_FBX + " が見つかりません。Cube で代替します。");
+                phone = CreateBase("公衆電話_phone", "phone",
+                    new Vector3(4.7f, 0.675f, 16f), new Vector3(0.48f, 0.85f, 0.38f),
+                    new Color(0.08f, 0.38f, 0.13f), root, layer);
+                CreateChild(phone, "Receiver", new Vector3(-0.05f, 0.28f, -0.22f), new Vector3(0.28f, 0.07f, 0.07f), new Color(0.06f, 0.28f, 0.09f));
+            }
+            SetCorrectObject(phone, "phone", layer);
+            var phoneAudio = phone.AddComponent<AudioSource>();
+            phoneAudio.loop = true; phoneAudio.spatialBlend = 1f; phoneAudio.maxDistance = 8f;
+            AddHint(phone, "電話が鳴っている...出るべきか？");
+        }
 
         // 9. 線路（欠損）- track  (ホームより外側・線路側)
         var track = new GameObject("線路_track");

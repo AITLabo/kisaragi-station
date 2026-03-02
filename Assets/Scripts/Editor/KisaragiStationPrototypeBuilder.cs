@@ -186,6 +186,7 @@ public class KisaragiStationPrototypeBuilder
                 b.transform.SetParent(benchGroup.transform);
                 b.transform.position = new Vector3(bx, PLATFORM_H, 0f);
                 b.transform.rotation = Quaternion.Euler(0f, benchPairRotY[i], 0f);
+                b.transform.localScale = new Vector3(0.82f, 0.82f, 0.82f);
                 b.isStatic = true;
                 PurgeFbxExtras(b);
             }
