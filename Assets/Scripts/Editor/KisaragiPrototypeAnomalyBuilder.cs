@@ -118,7 +118,7 @@ public class KisaragiPrototypeAnomalyBuilder
 
         // 7. ポスター - poster  (階段内壁・電話ボックス横 Z=17)
         var poster = CreateBase("ポスター_poster", "poster",
-            new Vector3(4.4f, 1.6f, 20f), new Vector3(0.05f, 1.1f, 0.78f),
+            new Vector3(4.4f, 1.6f, 19.5f), new Vector3(0.05f, 1.1f, 0.78f),
             new Color(0.88f, 0.83f, 0.73f), root, layer);
         AddTMP(poster, "観光案内", 0.08f, new Color(0.2f, 0.2f, 0.4f), new Vector3(0.04f, 0.25f, 0));
         CreateChild(poster, "FaceBlank", new Vector3(0.03f, -0.08f, 0), new Vector3(0.02f, 0.48f, 0.38f), new Color(0.88f, 0.83f, 0.73f));
@@ -134,7 +134,7 @@ public class KisaragiPrototypeAnomalyBuilder
                 phone = Object.Instantiate(phoneAsset);
                 phone.name = "公衆電話_phone";
                 phone.transform.SetParent(root.transform);
-                phone.transform.position = new Vector3(3.9f, 0.25f, 21f); // ホーム側・階段内壁(X=4.6)の手前
+                phone.transform.position = new Vector3(3.9f, 0.25f, 21.5f); // ホーム側・階段内壁(X=4.6)の手前
                 phone.transform.rotation = Quaternion.Euler(0f, 0f, 0f); // +Z向き
                 phone.transform.localScale = new Vector3(1.3f, 1.3f, 1.3f); // 少し大きく
                 phone.layer = layer;
