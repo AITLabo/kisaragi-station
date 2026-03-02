@@ -138,7 +138,7 @@ public class KisaragiGateBuilder
         //     南壁: Z=-8〜-5 / 北壁: Z=+11〜+14
         //     → 開口 Z=-5〜+11 (16m) に縮小
         // ─────────────────────────────────────────────
-        const float ENTRY_WALL_LEN = 3.0f;
+        const float ENTRY_WALL_LEN = 5.0f;
         float entryWallX = GATE_X_START + WALL_T;           // X=4.65（ホームと面合わせ）
         // 南
         Cube("Gate_EntryWallS", gateRoot,
