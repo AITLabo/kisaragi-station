@@ -1,0 +1,26 @@
+# Unity推奨 gitattributes
+
+# テキストファイルは LF に統一
+* text=auto
+
+# Unity固有バイナリ
+*.fbx binary
+*.FBX binary
+*.blend binary
+*.unitypackage binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.tga binary
+*.psd binary
+*.tiff binary
+*.gif binary
+*.mp3 binary
+*.wav binary
+*.ogg binary
+*.aiff binary
+*.ttc binary
+*.ttf binary
+*.otf binary
+*.dll binary
+*.exe binary

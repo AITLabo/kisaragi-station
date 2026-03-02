@@ -1,0 +1,33 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bed6ae1c37f739f4bbfcd8b5f626842d, type: 3}
+  m_Name: LoopData_1
+  m_EditorClassIdentifier: 
+  fogDensity: 0.012
+  saturation: -15
+  chromaticAberration: 0.2
+  vignette: 0.35
+  vignetteSmoothness: 0.5
+  filmGrain: 0.25
+  filmGrainResponse: 0.8
+  postExposure: -0.3
+  contrast: 10
+  lowFrequencyVolume: 0
+  windVolume: 0.2
+  footstepDelay: 0
+  enableDummy: 0
+  reverseClock: 0
+  stationNameOverride: 
+  signDisplayText: 
+  menuBreak: 0
+  settingsBreak: 0
+  stereoFlip: 0

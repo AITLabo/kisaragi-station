@@ -1,0 +1,42 @@
+# Unity生成ファイル（コミット不要）
+/[Ll]ibrary/
+/[Tt]emp/
+/[Oo]bj/
+/[Bb]uild/
+/[Bb]uilds/
+/[Ll]ogs/
+/[Uu]ser[Ss]ettings/
+/[Mm]emory[Cc]aptures/
+/[Rr]ecordings/
+
+# IDE
+.vs/
+.vscode/
+
+# Plastic SCM（Unity組み込みVCS）
+.plastic/
+*.csproj
+*.sln
+*.suo
+*.user
+*.userprefs
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Unity固有
+sysinfo.txt
+*.pidb
+*.booproj
+*.svd
+*.pdb
+*.mdb
+*.opendb
+*.VC.db
+
+# ビルド成果物
+*.apk
+*.aab
+*.unitypackage
+*.app
