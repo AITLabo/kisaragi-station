@@ -224,7 +224,7 @@ public class KisaragiGateBuilder
                 booth.name = "StationBooth";
                 booth.transform.SetParent(gateRoot.transform);
                 booth.transform.position = new Vector3(boothX, FLOOR_Y, boothZ);
-                booth.transform.rotation = Quaternion.Euler(0f, 90f, 0f); // ホーム側（-X）向き
+                booth.transform.rotation = Quaternion.Euler(0f, 180f, 0f);
                 booth.isStatic = true;
                 PurgeFbxExtras(booth);
             }
