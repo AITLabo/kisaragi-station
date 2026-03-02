@@ -138,18 +138,26 @@ public class KisaragiGateBuilder
         //     南壁: Z=-8〜-5 / 北壁: Z=+11〜+14
         //     → 開口 Z=-5〜+11 (16m) に縮小
         // ─────────────────────────────────────────────
-        const float ENTRY_WALL_LEN = 5.0f;
+        // 開口8m: 南壁Z=-8〜-1 / 北壁Z=+7〜+14 / 開口Z=-1〜+7
+        const float ENTRY_WALL_LEN = 7.0f;
         float entryWallX = GATE_X_START + WALL_T;           // X=4.65（ホームと面合わせ）
         // 南
         Cube("Gate_EntryWallS", gateRoot,
             new Vector3(entryWallX, FLOOR_Y + BLDG_H * 0.5f,
-                        GATE_Z_START + ENTRY_WALL_LEN * 0.5f),          // Z=-6.5
+                        GATE_Z_START + ENTRY_WALL_LEN * 0.5f),          // Z=-4.5
             new Vector3(WALL_T * 2, BLDG_H, ENTRY_WALL_LEN), concMat);
         // 北
         Cube("Gate_EntryWallN", gateRoot,
             new Vector3(entryWallX, FLOOR_Y + BLDG_H * 0.5f,
-                        GATE_Z_END - ENTRY_WALL_LEN * 0.5f),            // Z=12.5
+                        GATE_Z_END - ENTRY_WALL_LEN * 0.5f),            // Z=10.5
             new Vector3(WALL_T * 2, BLDG_H, ENTRY_WALL_LEN), concMat);
+
+        // 北エリア仕切り壁（改札エリアを Z=+7 で遮断・出口壁まで横断）
+        float dividerZ = GATE_Z_END - ENTRY_WALL_LEN;       // +7.0
+        Cube("Gate_NorthDivider", gateRoot,
+            new Vector3(GATE_X_CTR, FLOOR_Y + BLDG_H * 0.5f,
+                        dividerZ + WALL_T * 0.5f),
+            new Vector3(BLDG_DEPTH, BLDG_H, WALL_T), concMat);
 
         // ─────────────────────────────────────────────
         // 7. 改札ボード（kaisatsu.blend.fbx）
