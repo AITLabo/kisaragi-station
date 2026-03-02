@@ -133,31 +133,61 @@ public class KisaragiGateBuilder
             new Vector3(WALL_T * 2, WALL_T, GATE_Z_LEN), concMat);
 
         // ─────────────────────────────────────────────
-        // 6b. 入口絞り壁（南・北）
-        //     改札エリアとホームの間の開口を中央付近に絞る
-        //     南壁: Z=-8〜-5 / 北壁: Z=+11〜+14
-        //     → 開口 Z=-5〜+11 (16m) に縮小
+        // 6b. 入口絞り壁 + 南北仕切り壁 + 職員待機所
+        //     南絞り壁: Z=-8〜-2 (6m, 1m短縮で職員待機所ニッチ確保)
+        //     北絞り壁: Z=+7〜+14 (7m)
+        //     開口: Z=-1〜+7 (8m)
         // ─────────────────────────────────────────────
-        // 開口8m: 南壁Z=-8〜-1 / 北壁Z=+7〜+14 / 開口Z=-1〜+7
-        const float ENTRY_WALL_LEN = 7.0f;
-        float entryWallX = GATE_X_START + WALL_T;           // X=4.65（ホームと面合わせ）
-        // 南
+        const float ENTRY_WALL_S = 6.0f;   // 南: 1m短縮
+        const float ENTRY_WALL_N = 7.0f;   // 北
+        float entryWallX = GATE_X_START + WALL_T;           // X=4.65
+        // 南絞り壁 (Z=-8〜-2)
         Cube("Gate_EntryWallS", gateRoot,
             new Vector3(entryWallX, FLOOR_Y + BLDG_H * 0.5f,
-                        GATE_Z_START + ENTRY_WALL_LEN * 0.5f),          // Z=-4.5
-            new Vector3(WALL_T * 2, BLDG_H, ENTRY_WALL_LEN), concMat);
-        // 北
+                        GATE_Z_START + ENTRY_WALL_S * 0.5f),            // Z=-5.0
+            new Vector3(WALL_T * 2, BLDG_H, ENTRY_WALL_S), concMat);
+        // 北絞り壁 (Z=+7〜+14)
         Cube("Gate_EntryWallN", gateRoot,
             new Vector3(entryWallX, FLOOR_Y + BLDG_H * 0.5f,
-                        GATE_Z_END - ENTRY_WALL_LEN * 0.5f),            // Z=10.5
-            new Vector3(WALL_T * 2, BLDG_H, ENTRY_WALL_LEN), concMat);
+                        GATE_Z_END - ENTRY_WALL_N * 0.5f),              // Z=10.5
+            new Vector3(WALL_T * 2, BLDG_H, ENTRY_WALL_N), concMat);
 
-        // 北エリア仕切り壁（改札エリアを Z=+7 で遮断・出口壁まで横断）
-        float dividerZ = GATE_Z_END - ENTRY_WALL_LEN;       // +7.0
+        // 北仕切り壁（Z=+7、出口壁まで横断）
+        float dividerNZ = GATE_Z_END - ENTRY_WALL_N;                    // +7.0
         Cube("Gate_NorthDivider", gateRoot,
             new Vector3(GATE_X_CTR, FLOOR_Y + BLDG_H * 0.5f,
-                        dividerZ + WALL_T * 0.5f),
+                        dividerNZ + WALL_T * 0.5f),
             new Vector3(BLDG_DEPTH, BLDG_H, WALL_T), concMat);
+
+        // 南仕切り壁（Z=-1、出口壁まで横断）
+        float dividerSZ = GATE_Z_START + ENTRY_WALL_S + 1.0f;          // -8+6+1 = -1
+        Cube("Gate_SouthDivider", gateRoot,
+            new Vector3(GATE_X_CTR, FLOOR_Y + BLDG_H * 0.5f,
+                        dividerSZ - WALL_T * 0.5f),
+            new Vector3(BLDG_DEPTH, BLDG_H, WALL_T), concMat);
+
+        // 職員待機所（南ニッチ Z=-2〜-1 / プラットフォーム境界側）
+        {
+            float staffW  = 3.0f;
+            float staffCX = GATE_X_START + staffW * 0.5f;               // X=6.0
+            float nicheSZ = GATE_Z_START + ENTRY_WALL_S;                // -2.0 (ニッチ南端)
+            float staffCZ = (nicheSZ + dividerSZ) * 0.5f;               // -1.5
+            var   staffMat = GetOrCreateMat("Mat_StaffRoom", new Color(0.35f, 0.33f, 0.31f));
+            Cube("StaffRoom", gateRoot,
+                new Vector3(staffCX, FLOOR_Y + 1.4f, staffCZ),
+                new Vector3(staffW, 2.8f, 1.0f), staffMat);
+            // 「職員室」サイン
+            var srSign = new GameObject("StaffRoom_Sign");
+            srSign.transform.SetParent(gateRoot.transform);
+            srSign.transform.position = new Vector3(GATE_X_START + 0.12f, FLOOR_Y + 2.1f, staffCZ);
+            srSign.transform.rotation = Quaternion.Euler(0f, -90f, 0f);
+            var srTMP = srSign.AddComponent<TMPro.TextMeshPro>();
+            srTMP.text = "職員室";
+            srTMP.fontSize = 0.4f;
+            srTMP.alignment = TMPro.TextAlignmentOptions.Center;
+            srTMP.color = new Color(0.80f, 0.78f, 0.65f);
+            srTMP.rectTransform.sizeDelta = new Vector2(1.0f, 0.3f);
+        }
 
         // ─────────────────────────────────────────────
         // 7. 改札ボード（kaisatsu.blend.fbx）
