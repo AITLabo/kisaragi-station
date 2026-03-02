@@ -35,6 +35,9 @@ sysinfo.txt
 *.opendb
 *.VC.db
 
+# 大容量アセットパック（別途配布・ダウンロード）
+Assets/SubwayModelSet/
+
 # ビルド成果物
 *.apk
 *.aab
