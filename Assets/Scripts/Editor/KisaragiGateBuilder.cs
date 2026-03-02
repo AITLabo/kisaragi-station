@@ -40,7 +40,7 @@ public class KisaragiGateBuilder
     const float WALL_T    = 0.15f;
 
     // kaisatsu ボードの配置 X
-    const float BOARD_OFFSET_X = 0.4f;
+    const float BOARD_OFFSET_X = 0.8f;
 
     // 閉鎖ドアのサイズ
     const float DOOR_W = 1.6f;   // Z方向幅
@@ -131,6 +131,25 @@ public class KisaragiGateBuilder
             new Vector3(GATE_X_START + WALL_T * 0.5f,
                         FLOOR_Y + BLDG_H - WALL_T * 0.5f, GATE_Z_CTR),
             new Vector3(WALL_T * 2, WALL_T, GATE_Z_LEN), concMat);
+
+        // ─────────────────────────────────────────────
+        // 6b. 入口絞り壁（南・北）
+        //     改札エリアとホームの間の開口を中央付近に絞る
+        //     南壁: Z=-8〜-5 / 北壁: Z=+11〜+14
+        //     → 開口 Z=-5〜+11 (16m) に縮小
+        // ─────────────────────────────────────────────
+        const float ENTRY_WALL_LEN = 3.0f;
+        float entryWallX = GATE_X_START + WALL_T;           // X=4.65（ホームと面合わせ）
+        // 南
+        Cube("Gate_EntryWallS", gateRoot,
+            new Vector3(entryWallX, FLOOR_Y + BLDG_H * 0.5f,
+                        GATE_Z_START + ENTRY_WALL_LEN * 0.5f),          // Z=-6.5
+            new Vector3(WALL_T * 2, BLDG_H, ENTRY_WALL_LEN), concMat);
+        // 北
+        Cube("Gate_EntryWallN", gateRoot,
+            new Vector3(entryWallX, FLOOR_Y + BLDG_H * 0.5f,
+                        GATE_Z_END - ENTRY_WALL_LEN * 0.5f),            // Z=12.5
+            new Vector3(WALL_T * 2, BLDG_H, ENTRY_WALL_LEN), concMat);
 
         // ─────────────────────────────────────────────
         // 7. 改札ボード（kaisatsu.blend.fbx）
