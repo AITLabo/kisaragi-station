@@ -135,7 +135,7 @@ public class KisaragiPrototypeAnomalyBuilder
                 phone.name = "公衆電話_phone";
                 phone.transform.SetParent(root.transform);
                 phone.transform.position = new Vector3(3.9f, 0.25f, 21f); // ホーム側・階段内壁(X=4.6)の手前
-                phone.transform.rotation = Quaternion.Euler(0f, -90f, 0f); // 外側（+X）向き
+                phone.transform.rotation = Quaternion.Euler(0f, 0f, 0f); // +Z向き
                 phone.transform.localScale = new Vector3(1.3f, 1.3f, 1.3f); // 少し大きく
                 phone.layer = layer;
                 // FBX 不要コンポーネント除去（Camera・Light）
