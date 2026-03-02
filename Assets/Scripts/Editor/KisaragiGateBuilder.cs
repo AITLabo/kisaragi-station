@@ -55,14 +55,9 @@ public class KisaragiGateBuilder
             return;
         }
 
-        if (GameObject.Find("GateRoot") != null)
-        {
-            if (!EditorUtility.DisplayDialog("確認",
-                "GateRoot が既に存在します。再構築しますか？",
-                "再構築", "キャンセル"))
-                return;
-            Object.DestroyImmediate(GameObject.Find("GateRoot"));
-        }
+        // 既存 GateRoot は常に破棄して再構築（AllBuilder から呼ばれるため確認不要）
+        var existing = GameObject.Find("GateRoot");
+        if (existing != null) Object.DestroyImmediate(existing);
 
         var stationRoot = GameObject.Find("StationRoot");
         var gateRoot = new GameObject("GateRoot");
