@@ -172,7 +172,7 @@ public class KisaragiGateBuilder
             float staffW  = 3.0f;
             float nicheSZ = GATE_Z_START + ENTRY_WALL_S;                // -2.0
             float staffCZ = (nicheSZ + dividerSZ) * 0.5f;               // -1.5
-            float staffCX = GATE_X_START + WALL_T + staffW * 0.5f;      // X=6.15（壁面密着）
+            float staffCX = GATE_X_START + staffW * 0.5f;               // X=6.0（ホーム境界X=4.5に面する）
             var   staffMat = GetOrCreateMat("Mat_StaffRoom", new Color(0.35f, 0.33f, 0.31f));
             Cube("StaffRoom", gateRoot,
                 new Vector3(staffCX, FLOOR_Y + 1.4f, staffCZ),
