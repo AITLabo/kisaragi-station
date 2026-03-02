@@ -162,28 +162,7 @@ public class KisaragiGateBuilder
                         dividerSZ - WALL_T * 0.5f),
             new Vector3(BLDG_DEPTH, BLDG_H, WALL_T), concMat);
 
-        // 職員待機所（南ニッチ Z=-2〜-1 / ホーム境界側）
-        {
-            float staffW  = 3.0f;
-            float nicheSZ = GATE_Z_START + ENTRY_WALL_S;                // -2.0
-            float staffCZ = (nicheSZ + dividerSZ) * 0.5f;               // -1.5
-            float staffCX = GATE_X_START + staffW * 0.5f;               // X=6.0（ホーム境界X=4.5に面する）
-            var   staffMat = GetOrCreateMat("Mat_StaffRoom", new Color(0.35f, 0.33f, 0.31f));
-            Cube("StaffRoom", gateRoot,
-                new Vector3(staffCX, FLOOR_Y + 1.4f, staffCZ),
-                new Vector3(staffW, 2.8f, 1.0f), staffMat);
-            // 「職員室」サイン
-            var srSign = new GameObject("StaffRoom_Sign");
-            srSign.transform.SetParent(gateRoot.transform);
-            srSign.transform.position = new Vector3(GATE_X_START + 0.12f, FLOOR_Y + 2.1f, staffCZ);
-            srSign.transform.rotation = Quaternion.Euler(0f, -90f, 0f);
-            var srTMP = srSign.AddComponent<TMPro.TextMeshPro>();
-            srTMP.text = "職員室";
-            srTMP.fontSize = 0.4f;
-            srTMP.alignment = TMPro.TextAlignmentOptions.Center;
-            srTMP.color = new Color(0.80f, 0.78f, 0.65f);
-            srTMP.rectTransform.sizeDelta = new Vector2(1.0f, 0.3f);
-        }
+        // 職員待機所 → StationBooth（section 9）に統合済み
 
         // ─────────────────────────────────────────────
         // 7. 改札ボード（kaisatsu.blend.fbx）
@@ -232,26 +211,27 @@ public class KisaragiGateBuilder
         tmp.rectTransform.sizeDelta = new Vector2(3.0f, 0.5f);
 
         // ─────────────────────────────────────────────
-        // 9. 駅員室
+        // 9. 駅員室（ホーム境界側・南ニッチ Z=-1.5）
+        //    ホームから見える位置（X=GATE_X_START 付近）に配置
         // ─────────────────────────────────────────────
         {
+            float boothZ = dividerSZ - 0.5f;                            // -1.5（南ニッチ中央）
+            float boothX = GATE_X_START + 1.0f;                        // X=5.5（ホーム境界寄り）
             var boothAsset = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Models/booth.fbx");
             if (boothAsset != null)
             {
                 var booth = Object.Instantiate(boothAsset);
                 booth.name = "StationBooth";
                 booth.transform.SetParent(gateRoot.transform);
-                // 南壁（左手奥）に密着・室内（+Z）向き
-                booth.transform.position = new Vector3(GATE_X_END - 2.0f, FLOOR_Y, GATE_Z_START + 1.0f);
-                booth.transform.rotation = Quaternion.Euler(0f, 180f, 0f);
+                booth.transform.position = new Vector3(boothX, FLOOR_Y, boothZ);
+                booth.transform.rotation = Quaternion.Euler(0f, 90f, 0f); // ホーム側（-X）向き
                 booth.isStatic = true;
                 PurgeFbxExtras(booth);
             }
             else
             {
-                Debug.LogWarning("[GateBuilder] Assets/Models/booth.fbx が見つかりません。Cube で代替します。");
                 Cube("StationBooth", gateRoot,
-                    new Vector3(GATE_X_END - 2.0f, FLOOR_Y + 1.2f, GATE_Z_START + 1.0f),
+                    new Vector3(boothX, FLOOR_Y + 1.2f, boothZ),
                     new Vector3(2.5f, 2.4f, 2.0f),
                     GetOrCreateMat("Mat_Booth", new Color(0.28f, 0.27f, 0.26f)));
             }
