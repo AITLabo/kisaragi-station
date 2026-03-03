@@ -328,7 +328,7 @@ public class KisaragiStationPrototypeBuilder
         var announcementBoard = GameObject.CreatePrimitive(PrimitiveType.Cube);
         announcementBoard.name = "AnnouncementBoard";
         announcementBoard.transform.SetParent(stationRoot.transform);
-        announcementBoard.transform.localPosition = new Vector3(-PLATFORM_W * 0.5f + 0.5f, 2.4f, -5f);
+        announcementBoard.transform.localPosition = new Vector3(-PLATFORM_W * 0.5f + 1.5f, 2.4f, -5f);
         announcementBoard.transform.localRotation = Quaternion.Euler(0, 90f, 0);
         announcementBoard.transform.localScale = new Vector3(1.2f, 0.4f, 0.08f);
         announcementBoard.GetComponent<Renderer>().sharedMaterial = GetOrCreateMat("Mat_Announcement", new Color(0.15f, 0.15f, 0.18f));

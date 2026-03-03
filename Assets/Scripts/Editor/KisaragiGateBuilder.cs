@@ -186,6 +186,10 @@ public class KisaragiGateBuilder
                 booth.transform.rotation = Quaternion.Euler(0f, 180f, 0f);
                 booth.isStatic = true;
                 PurgeFbxExtras(booth);
+                // FBX 全レンダラーに色を上書き
+                var boothMat = GetOrCreateMat("Mat_Booth", new Color(0.25f, 0.32f, 0.22f));
+                foreach (var r in booth.GetComponentsInChildren<Renderer>(true))
+                    r.sharedMaterial = boothMat;
             }
             else
             {
