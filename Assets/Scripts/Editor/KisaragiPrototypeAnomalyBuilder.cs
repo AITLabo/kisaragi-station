@@ -49,7 +49,7 @@ public class KisaragiPrototypeAnomalyBuilder
         var tt = CreateBase("時刻表_timetable", "timetable",
             new Vector3(-1.25f, 1.6f, -15f), new Vector3(0.05f, 1.4f, 1.1f),
             new Color(0.93f, 0.91f, 0.86f), root, layer);
-        AddTMP(tt, "時刻表", 0.04f, new Color(0.1f, 0.1f, 0.1f), new Vector3(-0.04f, 0, 0));
+        AddTMP(tt, "時　刻　表", 0.35f, new Color(0.1f, 0.1f, 0.1f), new Vector3(-0.04f, 0.55f, 0));
         AddHint(tt, "時刻表の欄が全て空白だ...");
 
         // 4. 放送スピーカー - announcement  (右壁・高め)
