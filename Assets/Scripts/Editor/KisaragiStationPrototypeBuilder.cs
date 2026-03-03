@@ -435,6 +435,7 @@ public class KisaragiStationPrototypeBuilder
         var player = new GameObject("Player");
         player.tag = "Player";
         player.transform.position = new Vector3(0, 0, -10f); // ベンチ(Z=0)・階段(Z≈17)から離れたホーム南側中央
+        player.transform.localScale = new Vector3(1.5f, 1.5f, 1.5f);
         var cc = player.AddComponent<CharacterController>();
         cc.height = 1.8f;
         cc.radius = 0.28f;
