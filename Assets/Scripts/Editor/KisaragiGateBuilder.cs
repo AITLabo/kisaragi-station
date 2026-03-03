@@ -27,10 +27,10 @@ public class KisaragiGateBuilder
     const float GATE_X_END   = GATE_X_START + BLDG_DEPTH;       // +11.5
     const float GATE_X_CTR   = (GATE_X_START + GATE_X_END) * 0.5f; // +8.0
 
-    // 改札ビルの Z 範囲
-    const float GATE_Z_START = -8.0f;
-    const float GATE_Z_END   = +14.0f;
-    const float GATE_Z_LEN   = GATE_Z_END - GATE_Z_START;       // 22m
+    // 改札ビルの Z 範囲（プレイヤーが入れる空間のみ・余剰空間なし）
+    const float GATE_Z_START = -1.0f;
+    const float GATE_Z_END   = +7.0f;
+    const float GATE_Z_LEN   = GATE_Z_END - GATE_Z_START;       // 8m
     const float GATE_Z_CTR   = (GATE_Z_START + GATE_Z_END) * 0.5f; // +3.0
 
     // 高さ
@@ -128,50 +128,13 @@ public class KisaragiGateBuilder
             new Vector3(WALL_T * 2, WALL_T, GATE_Z_LEN), concMat);
 
         // ─────────────────────────────────────────────
-        // 6b. 入口絞り壁 + 南北仕切り壁 + 職員待機所
-        //     南絞り壁: Z=-8〜-2 (6m, 南ニッチ Z=-2〜-1 確保)
-        //     北絞り壁: Z=+7〜+14 (7m)
-        //     開口: Z=-1〜+7 (8m)
-        //     職員待機所: 南角ニッチ Z=-1.5 / ホーム境界側 X=4.65
-        // ─────────────────────────────────────────────
-        const float ENTRY_WALL_S = 6.0f;   // 南: 1m短縮で角ニッチ
-        const float ENTRY_WALL_N = 7.0f;   // 北
-        float entryWallX = GATE_X_START + WALL_T;           // X=4.65
-        // 南絞り壁 (Z=-8〜-2)
-        Cube("Gate_EntryWallS", gateRoot,
-            new Vector3(entryWallX, FLOOR_Y + BLDG_H * 0.5f,
-                        GATE_Z_START + ENTRY_WALL_S * 0.5f),            // Z=-5.0
-            new Vector3(WALL_T * 2, BLDG_H, ENTRY_WALL_S), concMat);
-        // 北絞り壁 (Z=+7〜+14)
-        Cube("Gate_EntryWallN", gateRoot,
-            new Vector3(entryWallX, FLOOR_Y + BLDG_H * 0.5f,
-                        GATE_Z_END - ENTRY_WALL_N * 0.5f),              // Z=10.5
-            new Vector3(WALL_T * 2, BLDG_H, ENTRY_WALL_N), concMat);
-
-        // 北仕切り壁（Z=+7、出口壁まで横断）
-        float dividerNZ = GATE_Z_END - ENTRY_WALL_N;                    // +7.0
-        Cube("Gate_NorthDivider", gateRoot,
-            new Vector3(GATE_X_CTR, FLOOR_Y + BLDG_H * 0.5f,
-                        dividerNZ + WALL_T * 0.5f),
-            new Vector3(BLDG_DEPTH, BLDG_H, WALL_T), concMat);
-
-        // 南仕切り壁（Z=-1、出口壁まで横断）
-        float dividerSZ = GATE_Z_START + ENTRY_WALL_S + 1.0f;          // -8+6+1 = -1
-        Cube("Gate_SouthDivider", gateRoot,
-            new Vector3(GATE_X_CTR, FLOOR_Y + BLDG_H * 0.5f,
-                        dividerSZ - WALL_T * 0.5f),
-            new Vector3(BLDG_DEPTH, BLDG_H, WALL_T), concMat);
-
-        // 職員待機所 → StationBooth（section 9）に統合済み
-
-        // ─────────────────────────────────────────────
         // 7. 改札ボード（kaisatsu.blend.fbx）
         //    入口付近に等間隔で配置（通り抜け可能・視覚的な改札機）
         // ─────────────────────────────────────────────
         {
             float boardX = GATE_X_START + BOARD_OFFSET_X;
             var kaisatsuAsset = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Models/kaisatsu.blend.fbx");
-            float[] boardZs = { -6f, -2.4f, 1.2f, 4.8f, 8.4f, 12f };
+            float[] boardZs = { 0.0f, 2.0f, 4.0f, 6.0f };
             foreach (float bz in boardZs)
             {
                 if (kaisatsuAsset != null)
@@ -215,7 +178,7 @@ public class KisaragiGateBuilder
         //    ホームから見える位置（X=GATE_X_START 付近）に配置
         // ─────────────────────────────────────────────
         {
-            float boothZ = dividerSZ - 0.5f;                            // -1.5（南ニッチ中央）
+            float boothZ = GATE_Z_START + 1.5f;                         // Z=0.5（南端付近）
             float boothX = GATE_X_START + 1.0f;                        // X=5.5（ホーム境界寄り）
             var boothAsset = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Models/booth.fbx");
             if (boothAsset != null)
@@ -310,9 +273,9 @@ public class KisaragiGateBuilder
         // ─────────────────────────────────────────────
         // 12. ホール内照明
         // ─────────────────────────────────────────────
-        AddHallLight(gateRoot, GATE_Z_CTR,       CEIL_Y - 0.15f, 1.5f, 10f,
+        AddHallLight(gateRoot, GATE_Z_CTR,        CEIL_Y - 0.15f, 1.5f, 10f,
                      new Color(0.78f, 0.82f, 0.65f));
-        AddHallLight(gateRoot, GATE_Z_CTR + 5f,  CEIL_Y - 0.15f, 0.5f,  6f,
+        AddHallLight(gateRoot, GATE_Z_CTR - 2.0f, CEIL_Y - 0.15f, 0.5f,  6f,
                      new Color(0.75f, 0.60f, 0.40f));
 
         // ─────────────────────────────────────────────
@@ -320,7 +283,7 @@ public class KisaragiGateBuilder
         // ─────────────────────────────────────────────
         var flickerLampGO = new GameObject("Gate_FlickerLight");
         flickerLampGO.transform.SetParent(gateRoot.transform);
-        flickerLampGO.transform.position = new Vector3(GATE_X_CTR, CEIL_Y - 0.15f, GATE_Z_CTR - 4.0f);
+        flickerLampGO.transform.position = new Vector3(GATE_X_CTR, CEIL_Y - 0.15f, GATE_Z_CTR + 2.0f);
         var lt2 = flickerLampGO.AddComponent<Light>();
         lt2.type      = LightType.Point;
         lt2.intensity = 0.8f;
