@@ -138,14 +138,6 @@ public class KisaragiStationPrototypeBuilder
         gravel.GetComponent<Renderer>().sharedMaterial = GetOrCreateMat("Mat_Gravel", new Color(0.2f, 0.19f, 0.18f));
         gravel.isStatic = true;
 
-        // VendingMachine（壊れた自販機・簡易）
-        var vending = GameObject.CreatePrimitive(PrimitiveType.Cube);
-        vending.name = "VendingMachine";
-        vending.transform.SetParent(stationRoot.transform);
-        vending.transform.localPosition = new Vector3(PLATFORM_W * 0.5f - 0.4f, PLATFORM_H + 0.9f, 5f);
-        vending.transform.localScale = new Vector3(0.6f, 1.8f, 0.5f);
-        vending.GetComponent<Renderer>().sharedMaterial = GetOrCreateMat("Mat_Vending", new Color(0.2f, 0.2f, 0.22f));
-        vending.isStatic = true;
 
         // Roof（Z=16 より先は陸橋・階段エリアのため屋根を除外）
         // OverpassBuilder の BRIDGE_Z_START(18) から余裕 2m 手前でカット
