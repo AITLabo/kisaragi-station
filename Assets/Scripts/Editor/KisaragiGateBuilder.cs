@@ -134,7 +134,7 @@ public class KisaragiGateBuilder
         {
             float boardX = GATE_X_START + BOARD_OFFSET_X;
             var kaisatsuAsset = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Models/kaisatsu.blend.fbx");
-            float[] boardZs = { 0.0f, 2.0f, 4.0f, 6.0f };
+            float[] boardZs = { 2.0f, 4.0f, 6.0f };
             foreach (float bz in boardZs)
             {
                 if (kaisatsuAsset != null)
@@ -158,10 +158,6 @@ public class KisaragiGateBuilder
         // ─────────────────────────────────────────────
         // 8. 「改札口」看板
         // ─────────────────────────────────────────────
-        Cube("GateSign_Frame", gateRoot,
-            new Vector3(GATE_X_START + 0.1f, FLOOR_Y + 3.1f, GATE_Z_CTR),
-            new Vector3(0.05f, 0.55f, 3.2f), signMat);
-
         var signGO = new GameObject("GateSign_Text");
         signGO.transform.SetParent(gateRoot.transform);
         signGO.transform.position = new Vector3(GATE_X_START + 0.13f, FLOOR_Y + 3.1f, GATE_Z_CTR);

@@ -253,7 +253,7 @@ public class KisaragiStationPrototypeBuilder
         // DustBox（ゴミ箱）- ホームA 柱の脇・数カ所
         {
             var dustAsset = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Models/dustbox.fbx");
-            float[] dustZs = { -12f, 4f, 14f }; // ホーム南側・中央・北側
+            float[] dustZs = { -12f, 14f }; // ホーム南側・北側（改札付近 Z=4 は削除）
             float dustX = PLATFORM_W * 0.5f - 0.35f; // 右壁沿い
             foreach (float dz in dustZs)
             {
