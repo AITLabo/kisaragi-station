@@ -398,21 +398,36 @@ public class KisaragiStationPrototypeBuilder
             bNorth.isStatic = true;
         }
 
-        // ── ホーム右側壁（線路と逆側・南ゾーン）──
-        // 改札建物(Z=-8)からホーム南端(Z=-24)まで、X=+4.5 に壁を設置
+        // ── ホーム右側壁（南ゾーン：ホーム南端〜改札南端）──
+        // GateBuilder.GATE_Z_START(-1) からホーム南端(Z=-24)まで X=+4.5 に壁を設置
         {
-            const float GATE_SOUTH_Z = -8f;            // GateBuilder.GATE_Z_START と一致
+            var wallMat = GetOrCreateMat("Mat_PlatformWall", new Color(0.40f, 0.38f, 0.36f));
+
+            const float GATE_SOUTH_Z = -1f;            // GateBuilder.GATE_Z_START と一致
             float platSouthZ  = -PLATFORM_L * 0.5f;   // = -24
-            float wallZCenter = (GATE_SOUTH_Z + platSouthZ) * 0.5f; // = -16
-            float wallZLen    = GATE_SOUTH_Z - platSouthZ;           // = 16
-            var pwall = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            pwall.name = "PlatformWall_South";
-            pwall.transform.SetParent(stationRoot.transform);
-            pwall.transform.localPosition = new Vector3(PLATFORM_W * 0.5f, CEILING_H * 0.5f, wallZCenter);
-            pwall.transform.localScale    = new Vector3(0.2f, CEILING_H, wallZLen);
-            pwall.GetComponent<Renderer>().sharedMaterial =
-                GetOrCreateMat("Mat_PlatformWall", new Color(0.40f, 0.38f, 0.36f));
-            pwall.isStatic = true;
+            float wallZCenter = (GATE_SOUTH_Z + platSouthZ) * 0.5f; // = -12.5
+            float wallZLen    = GATE_SOUTH_Z - platSouthZ;           // = 23m
+            var pwallS = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            pwallS.name = "PlatformWall_South";
+            pwallS.transform.SetParent(stationRoot.transform);
+            pwallS.transform.localPosition = new Vector3(PLATFORM_W * 0.5f, CEILING_H * 0.5f, wallZCenter);
+            pwallS.transform.localScale    = new Vector3(0.2f, CEILING_H, wallZLen);
+            pwallS.GetComponent<Renderer>().sharedMaterial = wallMat;
+            pwallS.isStatic = true;
+
+            // ── ホーム右側壁（北ゾーン：改札北端〜陸橋階段手前）──
+            // GateBuilder.GATE_Z_END(+7) から OverpassBuilder.BRIDGE_Z_START(18) まで壁を設置
+            const float GATE_NORTH_Z   = +7f;   // GateBuilder.GATE_Z_END と一致
+            const float BRIDGE_STAIR_Z = 18f;   // OverpassBuilder.BRIDGE_Z_START と一致
+            float wallNZCenter = (GATE_NORTH_Z + BRIDGE_STAIR_Z) * 0.5f; // = 12.5
+            float wallNZLen    = BRIDGE_STAIR_Z - GATE_NORTH_Z;          // = 11m
+            var pwallN = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            pwallN.name = "PlatformWall_North";
+            pwallN.transform.SetParent(stationRoot.transform);
+            pwallN.transform.localPosition = new Vector3(PLATFORM_W * 0.5f, CEILING_H * 0.5f, wallNZCenter);
+            pwallN.transform.localScale    = new Vector3(0.2f, CEILING_H, wallNZLen);
+            pwallN.GetComponent<Renderer>().sharedMaterial = wallMat;
+            pwallN.isStatic = true;
         }
 
         // VariantController
