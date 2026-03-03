@@ -134,7 +134,7 @@ public class KisaragiGateBuilder
         {
             float boardX = GATE_X_START + BOARD_OFFSET_X;
             var kaisatsuAsset = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Models/kaisatsu.blend.fbx");
-            float[] boardZs = { 2.0f, 4.0f, 6.0f };
+            float[] boardZs = { 4.0f, 6.0f }; // Z=2.0（職員室最近傍）を削除
             foreach (float bz in boardZs)
             {
                 if (kaisatsuAsset != null)
@@ -187,7 +187,7 @@ public class KisaragiGateBuilder
                 booth.isStatic = true;
                 PurgeFbxExtras(booth);
                 // FBX 全レンダラーに色を上書き
-                var boothMat = GetOrCreateMat("Mat_Booth", new Color(0.25f, 0.32f, 0.22f));
+                var boothMat = GetOrCreateMat("Mat_Booth", new Color(0.28f, 0.27f, 0.26f));
                 foreach (var r in booth.GetComponentsInChildren<Renderer>(true))
                     r.sharedMaterial = boothMat;
             }
