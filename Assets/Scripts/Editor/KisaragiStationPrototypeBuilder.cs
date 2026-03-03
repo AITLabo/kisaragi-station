@@ -457,7 +457,30 @@ public class KisaragiStationPrototypeBuilder
         var pcComp = player.GetComponent<PlayerController>();
         var pcSO   = new SerializedObject(pcComp);
         pcSO.FindProperty("cameraTransform").objectReferenceValue = cam.transform;
+
+        // 足音 AudioSource（カツカツ演出）
+        var footstepAS = player.AddComponent<AudioSource>();
+        footstepAS.loop         = false;
+        footstepAS.spatialBlend = 0f;   // プレイヤー自身の音なので 2D
+        footstepAS.volume       = 0.75f;
+        footstepAS.pitch        = 1.0f;
+        // クリップが Assets/Audio/footstep.wav にあれば自動アサイン
+        var footstepClip = AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Audio/footstep.wav")
+                        ?? AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Audio/footstep.ogg")
+                        ?? AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Audio/footstep.mp3");
+        if (footstepClip != null) footstepAS.clip = footstepClip;
+        pcSO.FindProperty("footstepSource").objectReferenceValue = footstepAS;
+
         pcSO.ApplyModifiedProperties();
+
+        // ── ホーム反響リバーブゾーン（コンクリートホールのカツカツ反響）──
+        var reverbGO = new GameObject("Platform_ReverbZone");
+        reverbGO.transform.SetParent(stationRoot.transform);
+        reverbGO.transform.localPosition = new Vector3(0f, 0f, 0f);
+        var rvz = reverbGO.AddComponent<AudioReverbZone>();
+        rvz.reverbPreset = AudioReverbPreset.StoneCorridor; // コンクリート廊下
+        rvz.minDistance  = 1f;
+        rvz.maxDistance  = 60f; // ホーム全長をカバー
 
         var canvas = new GameObject("UI Canvas");
         canvas.AddComponent<Canvas>().renderMode = RenderMode.ScreenSpaceOverlay;
