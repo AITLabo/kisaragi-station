@@ -54,7 +54,7 @@ public class KisaragiPrototypeAnomalyBuilder
 
         // 4. 放送スピーカー - announcement  (右壁・高め)
         var spk = CreateBase("放送スピーカー_announcement", "announcement",
-            new Vector3(1.25f, 2.5f, 0f), new Vector3(0.05f, 0.28f, 0.38f),
+            new Vector3(1.25f, 2.65f, 0f), new Vector3(0.05f, 0.28f, 0.38f),
             new Color(0.28f, 0.28f, 0.32f), root, layer);
         for (int i = -1; i <= 1; i++)
         {
