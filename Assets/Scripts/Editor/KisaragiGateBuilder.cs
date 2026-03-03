@@ -192,7 +192,7 @@ public class KisaragiGateBuilder
                 Cube("StationBooth", gateRoot,
                     new Vector3(boothX, FLOOR_Y + 1.2f, boothZ),
                     new Vector3(2.5f, 2.4f, 2.0f),
-                    GetOrCreateMat("Mat_Booth", new Color(0.28f, 0.27f, 0.26f)));
+                    GetOrCreateMat("Mat_Booth", new Color(0.25f, 0.32f, 0.22f)));
             }
         }
 
@@ -267,27 +267,21 @@ public class KisaragiGateBuilder
         }
 
         // ─────────────────────────────────────────────
-        // 12. ホール内照明
+        // 12. ホール内蛍光灯（3本・南から北に等間隔、中央チカチカ）
         // ─────────────────────────────────────────────
-        AddHallLight(gateRoot, GATE_Z_CTR,        CEIL_Y - 0.15f, 1.5f, 10f,
-                     new Color(0.78f, 0.82f, 0.65f));
-        AddHallLight(gateRoot, GATE_Z_CTR - 2.0f, CEIL_Y - 0.15f, 0.5f,  6f,
-                     new Color(0.75f, 0.60f, 0.40f));
-
-        // ─────────────────────────────────────────────
-        // 13. FlickerLight
-        // ─────────────────────────────────────────────
-        var flickerLampGO = new GameObject("Gate_FlickerLight");
-        flickerLampGO.transform.SetParent(gateRoot.transform);
-        flickerLampGO.transform.position = new Vector3(GATE_X_CTR, CEIL_Y - 0.15f, GATE_Z_CTR + 2.0f);
-        var lt2 = flickerLampGO.AddComponent<Light>();
-        lt2.type      = LightType.Point;
-        lt2.intensity = 0.8f;
-        lt2.range     = 7f;
-        lt2.color     = new Color(0.88f, 0.94f, 0.78f);
-        lt2.shadows   = LightShadows.None;
-        if (flickerLampGO.GetComponent<FlickerLight>() == null)
-            flickerLampGO.AddComponent<FlickerLight>();
+        {
+            var lightGroup = new GameObject("Gate_LightingGroup");
+            lightGroup.transform.SetParent(gateRoot.transform);
+            float tubeY  = CEIL_Y - 0.05f;
+            float[] tubeZs = { GATE_Z_CTR - 2.5f, GATE_Z_CTR, GATE_Z_CTR + 2.5f };
+            for (int i = 0; i < tubeZs.Length; i++)
+            {
+                KisaragiStationPrototypeBuilder.AddFluorescentTube(
+                    lightGroup.transform,
+                    new Vector3(GATE_X_CTR, tubeY, tubeZs[i]),
+                    broken: i == 1); // 中央（index 1）をチカチカ
+            }
+        }
 
         EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
         Debug.Log("[GateBuilder] 改札ビル構築完了");
