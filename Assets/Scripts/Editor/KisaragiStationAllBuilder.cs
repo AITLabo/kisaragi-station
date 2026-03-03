@@ -30,7 +30,7 @@ public class KisaragiStationAllBuilder
             "駅シーン一括構築",
             "以下の順序で全オブジェクトを構築します:\n\n" +
             "① Station Prototype  … ホームA・プレイヤー・カメラ・点字ブロック（ドット）\n" +
-            "② Build Overpass     … 陸橋・ホームB・蛍光灯（天井・廊下向き）・点字（ドット）\n" +
+            "② Build Overpass     … 陸橋・ホームB・蛍光灯・人影（半透明+スモーク+Bloom）\n" +
             "③ Build Gate         … 改札ビル（プレイヤー通過可能・改札〜階段接続）\n" +
             "④ Prototype Anomalies… 違和感オブジェクト10個\n" +
             "⑤ Fix Japanese Font  … 日本語フォント自動設定\n\n" +

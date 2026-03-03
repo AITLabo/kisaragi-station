@@ -214,12 +214,14 @@ public class KisaragiStationPrototypeBuilder
         signBoard.isStatic = true;
 
         // Poster（ポスター・ホーム壁面）
-        var poster = GameObject.CreatePrimitive(PrimitiveType.Quad);
+        var poster = GameObject.CreatePrimitive(PrimitiveType.Cube);
         poster.name = "Poster";
         poster.transform.SetParent(stationRoot.transform);
-        poster.transform.localPosition = new Vector3(PLATFORM_W * 0.5f - 0.02f, 1.8f, 15f);
-        poster.transform.localRotation = Quaternion.Euler(0, 180f, 0);
-        poster.transform.localScale = new Vector3(0.9f, 1.2f, 1f);
+        // SouthWall_Ext_A 北面(Z=14.0)の前。階段A中心(X=6.1)に合わせる。
+        // 上り時は背面、下り時(北→南を向く)に正面が見える。
+        poster.transform.localPosition = new Vector3(6.1f, 1.8f, 14.1f);
+        poster.transform.localRotation = Quaternion.Euler(0, 0f, 0);
+        poster.transform.localScale = new Vector3(0.9f, 1.2f, 0.05f);
         poster.GetComponent<Renderer>().sharedMaterial = GetOrCreateMat("Mat_Poster", new Color(0.75f, 0.72f, 0.65f));
         poster.isStatic = true;
 
@@ -326,7 +328,7 @@ public class KisaragiStationPrototypeBuilder
         var announcementBoard = GameObject.CreatePrimitive(PrimitiveType.Cube);
         announcementBoard.name = "AnnouncementBoard";
         announcementBoard.transform.SetParent(stationRoot.transform);
-        announcementBoard.transform.localPosition = new Vector3(-PLATFORM_W * 0.5f + 0.05f, 2.4f, -5f);
+        announcementBoard.transform.localPosition = new Vector3(-PLATFORM_W * 0.5f + 0.5f, 2.4f, -5f);
         announcementBoard.transform.localRotation = Quaternion.Euler(0, 90f, 0);
         announcementBoard.transform.localScale = new Vector3(1.2f, 0.4f, 0.08f);
         announcementBoard.GetComponent<Renderer>().sharedMaterial = GetOrCreateMat("Mat_Announcement", new Color(0.15f, 0.15f, 0.18f));
@@ -415,12 +417,14 @@ public class KisaragiStationPrototypeBuilder
             pwallS.GetComponent<Renderer>().sharedMaterial = wallMat;
             pwallS.isStatic = true;
 
-            // ── ホーム右側壁（北ゾーン：改札北端〜陸橋階段手前）──
-            // GateBuilder.GATE_Z_END(+7) から OverpassBuilder.BRIDGE_Z_START(18) まで壁を設置
+            // ── ホーム右側壁（北ゾーン：改札北端〜拡張ホーム開始手前）──
+            // GateBuilder.GATE_Z_END(+7) から OverpassBuilder の Platform A 拡張開始(Z=14) まで壁を設置
+            // Z=14 以降は拡張ホーム床が X>4.5 に生成されるため、ここで壁を止めてプレイヤーが
+            // 階段エリア(X>4.5)へ入れるよう開口を確保する
             const float GATE_NORTH_Z   = +7f;   // GateBuilder.GATE_Z_END と一致
-            const float BRIDGE_STAIR_Z = 18f;   // OverpassBuilder.BRIDGE_Z_START と一致
-            float wallNZCenter = (GATE_NORTH_Z + BRIDGE_STAIR_Z) * 0.5f; // = 12.5
-            float wallNZLen    = BRIDGE_STAIR_Z - GATE_NORTH_Z;          // = 11m
+            const float BRIDGE_STAIR_Z = 14f;   // OverpassBuilder.GATE_Z_END_VAL（拡張ホーム開始Z）と一致
+            float wallNZCenter = (GATE_NORTH_Z + BRIDGE_STAIR_Z) * 0.5f; // = 10.5
+            float wallNZLen    = BRIDGE_STAIR_Z - GATE_NORTH_Z;          // = 7m
             var pwallN = GameObject.CreatePrimitive(PrimitiveType.Cube);
             pwallN.name = "PlatformWall_North";
             pwallN.transform.SetParent(stationRoot.transform);

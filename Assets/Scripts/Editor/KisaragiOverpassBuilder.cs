@@ -1,6 +1,8 @@
 using UnityEngine;
 using UnityEditor;
 using UnityEditor.SceneManagement;
+using UnityEngine.Rendering;
+using UnityEngine.Rendering.Universal;
 
 // Unity メニュー「Kisaragi > Build Overpass（陸橋＋Bホーム構築）」
 // StationPrototype シーンに陸橋構造とBホームを追加する
@@ -199,6 +201,18 @@ public class KisaragiOverpassBuilder
             new Vector3(0.1f, CEILING_H, floorZLen),
             Mat("Mat_PlatformA_Ext_Wall", new Color(0.33f, 0.30f, 0.28f)));
 
+        // ── 南壁（Z=14、ゴミ箱付近の外への穴を塞ぐ）──────────────────────
+        // PlatformWall_North（Z=7〜14, X=4.5）の北端と OuterWall（X=8.55）を接続。
+        // 拡張エリア南面が開口していると、プレイヤーが Z=14 縁から -Z 方向に歩いて
+        // Z=7〜14 の床なし地帯（ゲート建物と拡張ホームの間）に落ちて外に出られる。
+        var wallMat = Mat("Mat_PlatformA_Ext_Wall", new Color(0.33f, 0.30f, 0.28f));
+        Cube("SouthWall_Ext_A", ext,
+            new Vector3(extCenterX,
+                        PLATFORM_H + CEILING_H * 0.5f,
+                        GATE_Z_END_VAL - BRIDGE_THICKNESS * 0.5f),
+            new Vector3(EXT_W, CEILING_H, BRIDGE_THICKNESS),
+            wallMat);
+
         Debug.Log("[OverpassBuilder] Platform A 拡張完了 (X=1.6~4.0, Z=" + (floorZ - floorZLen * 0.5f).ToString("F1") + "~" + (floorZ + floorZLen * 0.5f).ToString("F1") + ")");
     }
 
@@ -293,15 +307,17 @@ public class KisaragiOverpassBuilder
 
         // ── 黒い人影（向かいホームBに立つシルエット）──────────────────
         // プレイヤーから見てホームBの軌道側エッジ付近に静止
-        var shadowMat = Mat("Mat_Shadow", new Color(0.02f, 0.02f, 0.03f));
+        var shadowMat = MakeShadowMat();
         var shadow = new GameObject("ShadowFigure");
         shadow.transform.SetParent(platformB.transform);
+
+        float figX = PLATFORM_B_X + PLATFORM_W * 0.5f - 0.4f;
 
         // 頭（Sphere）
         var head = GameObject.CreatePrimitive(PrimitiveType.Sphere);
         head.name = "Head";
         head.transform.SetParent(shadow.transform);
-        head.transform.localPosition = new Vector3(PLATFORM_B_X + PLATFORM_W * 0.5f - 0.4f, PLATFORM_H + 1.65f, 5f);
+        head.transform.localPosition = new Vector3(figX, PLATFORM_H + 1.65f, 5f);
         head.transform.localScale    = new Vector3(0.22f, 0.24f, 0.22f);
         head.GetComponent<Renderer>().sharedMaterial = shadowMat;
         Object.DestroyImmediate(head.GetComponent<Collider>());
@@ -310,7 +326,7 @@ public class KisaragiOverpassBuilder
         var body = GameObject.CreatePrimitive(PrimitiveType.Cube);
         body.name = "Body";
         body.transform.SetParent(shadow.transform);
-        body.transform.localPosition = new Vector3(PLATFORM_B_X + PLATFORM_W * 0.5f - 0.4f, PLATFORM_H + 0.95f, 5f);
+        body.transform.localPosition = new Vector3(figX, PLATFORM_H + 0.95f, 5f);
         body.transform.localScale    = new Vector3(0.30f, 0.70f, 0.20f);
         body.GetComponent<Renderer>().sharedMaterial = shadowMat;
         Object.DestroyImmediate(body.GetComponent<Collider>());
@@ -319,10 +335,16 @@ public class KisaragiOverpassBuilder
         var legs = GameObject.CreatePrimitive(PrimitiveType.Cube);
         legs.name = "Legs";
         legs.transform.SetParent(shadow.transform);
-        legs.transform.localPosition = new Vector3(PLATFORM_B_X + PLATFORM_W * 0.5f - 0.4f, PLATFORM_H + 0.42f, 5f);
+        legs.transform.localPosition = new Vector3(figX, PLATFORM_H + 0.42f, 5f);
         legs.transform.localScale    = new Vector3(0.26f, 0.80f, 0.18f);
         legs.GetComponent<Renderer>().sharedMaterial = shadowMat;
         Object.DestroyImmediate(legs.GetComponent<Collider>());
+
+        // スモークパーティクル（胴体中心）
+        AddSmokeParticles(shadow.transform, body.transform.position);
+
+        // ローカル Bloom Volume（影の周囲半径5m）
+        AddShadowBloomVolume(platformB.transform, body.transform.position);
 
         Debug.Log("[OverpassBuilder] Platform B 構築完了（人影含む）");
     }
@@ -547,6 +569,18 @@ public class KisaragiOverpassBuilder
             new Vector3(outerX, BRIDGE_FLOOR_Y + 1.2f, landingZ),
             new Vector3(0.1f, 2.4f, landingLen), wallMat);
 
+        // ── 正面壁（階段奥端 Z=stairEndZ に面する壁）────────────────
+        // 階段下から見て「向かい」に当たる壁。
+        // 高さ上限は BRIDGE_FLOOR_Y - 0.15f（= 3.35m）にして、
+        // 頂上段(step 9)の踏み面 Y=3.5m に立つプレイヤーが壁にぶつからないよう余裕を残す。
+        float frontWallH = BRIDGE_FLOOR_Y - PLATFORM_H - 0.15f; // = 3.1m
+        Cube($"FrontWall_{side}", stairRoot,
+            new Vector3(centerX,
+                        PLATFORM_H + frontWallH * 0.5f,
+                        stairEndZ + BRIDGE_THICKNESS * 0.5f),
+            new Vector3(STAIR_WIDTH, frontWallH, BRIDGE_THICKNESS),
+            wallMat);
+
         Debug.Log($"[OverpassBuilder] 階段 {side} 側構築完了");
     }
 
@@ -714,5 +748,101 @@ public class KisaragiOverpassBuilder
         AssetDatabase.ImportAsset(SAVE_PATH);
         Debug.Log("[OverpassBuilder] 点字ドットテクスチャを生成: " + SAVE_PATH);
         return AssetDatabase.LoadAssetAtPath<Texture2D>(SAVE_PATH);
+    }
+
+    // ── 半透明シルエット用マテリアル ─────────────────────────────────
+    static Material MakeShadowMat()
+    {
+        var shader = Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard");
+        var mat = new Material(shader) { name = "Mat_Shadow" };
+        mat.color = new Color(0.02f, 0.02f, 0.03f, 0.5f);
+
+        // URP Transparent (Fade相当: アルファで完全透明まで抜ける)
+        mat.SetFloat("_Surface", 1f);                                         // Transparent
+        mat.SetFloat("_Blend",   0f);                                         // Alpha blend
+        mat.SetFloat("_SrcBlend", (float)BlendMode.SrcAlpha);
+        mat.SetFloat("_DstBlend", (float)BlendMode.OneMinusSrcAlpha);
+        mat.SetFloat("_ZWrite",   0f);
+        mat.SetOverrideTag("RenderType", "Transparent");
+        mat.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
+        mat.renderQueue = (int)RenderQueue.Transparent;
+        return mat;
+    }
+
+    // ── 体にまとわせるスモークパーティクル ────────────────────────────
+    static void AddSmokeParticles(Transform parent, Vector3 worldPos)
+    {
+        var go = new GameObject("SmokeParticles");
+        go.transform.SetParent(parent);
+        go.transform.position = worldPos;
+
+        var ps = go.AddComponent<ParticleSystem>();
+
+        var main = ps.main;
+        main.loop            = true;
+        main.playOnAwake     = true;
+        main.maxParticles    = 60;
+        main.startLifetime   = new ParticleSystem.MinMaxCurve(2f, 3f);
+        main.startSpeed      = new ParticleSystem.MinMaxCurve(0.04f, 0.18f);
+        main.startSize       = new ParticleSystem.MinMaxCurve(0.10f, 0.32f);
+        main.startColor      = new Color(0.04f, 0.04f, 0.06f, 0.35f);
+        main.simulationSpace = ParticleSystemSimulationSpace.World;
+        main.gravityModifier = -0.02f; // ゆっくり上昇
+
+        var emission = ps.emission;
+        emission.rateOverTime = 8f;
+
+        var shape = ps.shape;
+        shape.shapeType = ParticleSystemShapeType.Box;
+        shape.scale     = new Vector3(0.32f, 1.5f, 0.22f);
+
+        // 時間経過でアルファをフェードアウト
+        var col = ps.colorOverLifetime;
+        col.enabled = true;
+        var grad = new Gradient();
+        grad.SetKeys(
+            new GradientColorKey[]  { new GradientColorKey(new Color(0.04f, 0.04f, 0.06f), 0f),
+                                      new GradientColorKey(new Color(0.04f, 0.04f, 0.06f), 1f) },
+            new GradientAlphaKey[]  { new GradientAlphaKey(0.35f, 0f),
+                                      new GradientAlphaKey(0f,    1f) }
+        );
+        col.color = grad;
+
+        var renderer = go.GetComponent<ParticleSystemRenderer>();
+        var pShader  = Shader.Find("Universal Render Pipeline/Particles/Unlit")
+                    ?? Shader.Find("Particles/Standard Unlit");
+        if (pShader != null)
+        {
+            var pMat = new Material(pShader) { name = "Mat_Smoke" };
+            pMat.color = new Color(0.04f, 0.04f, 0.06f, 0.35f);
+            renderer.material = pMat;
+        }
+    }
+
+    // ── ShadowFigure 用ローカル Bloom Volume ─────────────────────────
+    static void AddShadowBloomVolume(Transform parent, Vector3 worldPos)
+    {
+        var go = new GameObject("ShadowBloom_Volume");
+        go.transform.SetParent(parent);
+        go.transform.position = worldPos;
+
+        // Volume の有効範囲をトリガー球で定義
+        var col    = go.AddComponent<SphereCollider>();
+        col.isTrigger = true;
+        col.radius    = 5f;
+
+        var volume          = go.AddComponent<Volume>();
+        volume.isGlobal     = false;
+        volume.blendDistance = 3f;
+        volume.weight        = 1f;
+        volume.priority      = 1f;
+
+        var profile = ScriptableObject.CreateInstance<VolumeProfile>();
+        var bloom   = profile.Add<Bloom>(true);
+        bloom.intensity.Override(0.8f);
+        bloom.threshold.Override(0.85f);
+        bloom.scatter.Override(0.5f);
+        bloom.tint.Override(new Color(0.75f, 0.85f, 1f)); // 青白い輪郭にじみ
+        volume.profile = profile;
     }
 }
