@@ -221,11 +221,12 @@ public class KisaragiStationPrototypeBuilder
             // TMP は独立オブジェクト（スケール歪みなし）、ボード北面（+Z面）の前に配置
             var labelGO = new GameObject("HintBoard_Text");
             labelGO.transform.SetParent(stationRoot.transform);
-            labelGO.transform.position = new Vector3(6.1f, 2.1f, 14.13f);
-            labelGO.transform.rotation = Quaternion.Euler(0f, 0f, 0f);
+            labelGO.transform.position   = new Vector3(6.1f, 2.1f, 14.13f);
+            labelGO.transform.rotation   = Quaternion.Euler(0f, 0f, 0f);
+            labelGO.transform.localScale = new Vector3(-1f, 1f, 1f); // X反転でテキスト正順（-Z向き視点対策）
             var noticeTmp = labelGO.AddComponent<TMPro.TextMeshPro>();
             noticeTmp.text               = "";
-            noticeTmp.fontSize           = 1.0f;
+            noticeTmp.fontSize           = 0.7f;
             noticeTmp.alignment          = TMPro.TextAlignmentOptions.TopRight;
             noticeTmp.color              = Color.black;
             noticeTmp.enableWordWrapping = false;
