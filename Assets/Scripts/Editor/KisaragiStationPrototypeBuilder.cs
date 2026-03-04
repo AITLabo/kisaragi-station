@@ -212,8 +212,8 @@ public class KisaragiStationPrototypeBuilder
             var notice = GameObject.CreatePrimitive(PrimitiveType.Cube);
             notice.name = "HintBoard_Notice";
             notice.transform.SetParent(stationRoot.transform);
-            notice.transform.localPosition = new Vector3(6.1f, 2.6f, 14.1f);
-            notice.transform.localScale    = new Vector3(3.2f, 2.8f, 0.04f);
+            notice.transform.localPosition = new Vector3(6.1f, 2.1f, 14.1f);
+            notice.transform.localScale    = new Vector3(2.2f, 1.6f, 0.04f);
             notice.GetComponent<Renderer>().sharedMaterial =
                 GetOrCreateMat("Mat_Notice", new Color(0.92f, 0.89f, 0.80f));
             notice.isStatic = true;
@@ -221,15 +221,16 @@ public class KisaragiStationPrototypeBuilder
             // TMP は独立オブジェクト（スケール歪みなし）、ボード北面（+Z面）の前に配置
             var labelGO = new GameObject("HintBoard_Text");
             labelGO.transform.SetParent(stationRoot.transform);
-            labelGO.transform.position = new Vector3(6.1f, 2.6f, 14.13f);
+            labelGO.transform.position = new Vector3(6.1f, 2.1f, 14.13f);
             labelGO.transform.rotation = Quaternion.Euler(0f, 0f, 0f);
             var noticeTmp = labelGO.AddComponent<TMPro.TextMeshPro>();
             noticeTmp.text               = "";
-            noticeTmp.fontSize           = 0.18f;
+            noticeTmp.fontSize           = 1.0f;
             noticeTmp.alignment          = TMPro.TextAlignmentOptions.TopRight;
             noticeTmp.color              = Color.black;
             noticeTmp.enableWordWrapping = false;
-            noticeTmp.rectTransform.sizeDelta = new Vector2(3.0f, 2.6f);
+            noticeTmp.overflowMode       = TMPro.TextOverflowModes.Overflow;
+            noticeTmp.rectTransform.sizeDelta = new Vector2(2.0f, 1.5f);
 
             var hintBoard   = notice.AddComponent<HintBoard>();
             var hintBoardSO = new SerializedObject(hintBoard);
