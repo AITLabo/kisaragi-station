@@ -49,7 +49,21 @@ public class KisaragiPrototypeAnomalyBuilder
         var tt = CreateBase("時刻表_timetable", "timetable",
             new Vector3(-1.25f, 1.6f, -15f), new Vector3(0.05f, 1.4f, 1.1f),
             new Color(0.93f, 0.91f, 0.86f), root, layer);
-        AddTMP(tt, "時　刻　表", 0.35f, new Color(0.1f, 0.1f, 0.1f), new Vector3(-0.04f, 0.55f, 0));
+        // ラベルはボード（非均等スケール）の子にせず root 直下にワールド座標で配置する。
+        // 非均等スケールの子に TMP を置くと sizeDelta が親スケールで歪むため。
+        {
+            var labelGO = new GameObject("時刻表_Label");
+            labelGO.transform.SetParent(root.transform);
+            labelGO.transform.position = new Vector3(-1.22f, 2.2f, -15f); // ボード前面・上部
+            labelGO.transform.rotation = Quaternion.Euler(0f, 90f, 0f);   // +X向き（ホーム側）
+            var tmp = labelGO.AddComponent<TMPro.TextMeshPro>();
+            tmp.text      = "時　刻　表";
+            tmp.fontSize  = 0.35f;
+            tmp.alignment = TMPro.TextAlignmentOptions.Center;
+            tmp.color     = new Color(0.1f, 0.1f, 0.1f);
+            tmp.rectTransform.sizeDelta = new Vector2(1.0f, 0.4f);
+            tmp.enableWordWrapping = false;
+        }
         AddHint(tt, "時刻表の欄が全て空白だ...");
 
         // 4. 放送スピーカー - announcement  (右壁・高め)
