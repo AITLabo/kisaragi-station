@@ -39,7 +39,7 @@ public class KisaragiPrototypeAnomalyBuilder
 
         // 2. 時計 - clock  (右壁・高め)
         var clock = CreateBase("時計_clock", "clock",
-            new Vector3(1.25f, 2.6f, -5f), new Vector3(0.05f, 0.7f, 0.7f),
+            new Vector3(1.25f, 2.72f, -5f), new Vector3(0.05f, 0.7f, 0.7f),
             new Color(0.88f, 0.86f, 0.80f), root, layer);
         AddTMP(clock, "◉", 0.12f, new Color(0.2f, 0.2f, 0.2f), new Vector3(-0.04f, 0, 0));
         clock.AddComponent<ClockAnomalyEffect>();
@@ -59,7 +59,7 @@ public class KisaragiPrototypeAnomalyBuilder
             labelGO.transform.localScale = new Vector3(-1f, 1f, 1f);      // X反転でテキスト正順
             var tmp = labelGO.AddComponent<TMPro.TextMeshPro>();
             tmp.text      = "時刻表";
-            tmp.fontSize  = 0.6f;
+            tmp.fontSize  = 0.8f;
             tmp.alignment = TMPro.TextAlignmentOptions.Center;
             tmp.color     = Color.black;
             tmp.rectTransform.sizeDelta = new Vector2(1.0f, 0.4f);
