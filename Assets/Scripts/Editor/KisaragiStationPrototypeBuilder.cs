@@ -532,8 +532,273 @@ public class KisaragiStationPrototypeBuilder
         EditorUtility.SetDirty(audioManager);
         Debug.Log("[StationPrototype] AudioManager + AudioSources を自動設定しました");
 
+        // ── 脱出電車 ──
+        CreateEscapeTrainSetup(stationRoot);
+
         EditorSceneManager.SaveScene(EditorSceneManager.GetActiveScene(), SCENES_PATH + "/" + SCENE_NAME + ".unity");
         Debug.Log("[StationPrototype] 実寸48m・StationRoot で保存: " + SCENES_PATH + "/" + SCENE_NAME + ".unity");
+    }
+
+    // ─────────────────────────────────────────────────────────
+    // 脱出電車セットアップ
+    // FBX が Assets/Models/train/ にあればそれを使用。
+    // なければプロシージャル 3 両編成にフォールバック。
+    // Editor では Z=0（ホーム）に配置して外観確認可能。
+    // 実行時は EscapeTrain.Start() が Z=spawnZ へ移動して非表示にする。
+    // ─────────────────────────────────────────────────────────
+    static void CreateEscapeTrainSetup(GameObject stationRoot)
+    {
+        // 線路X中心（BuildStationPrototype と一致）
+        const float RAIL_X1 = -(PLATFORM_W * 0.5f + 0.5f);    // = -5.0
+        const float RAIL_X2 = RAIL_X1 - RAIL_GAUGE;            // ≈ -6.067
+        const float TRAIN_X = (RAIL_X1 + RAIL_X2) * 0.5f;     // ≈ -5.534
+        const float WHEEL_Y = 0.10f;                            // レール上面高さ
+        const float CAR_W   = 2.7f;                             // 車幅（乗車ゾーン算出用）
+
+        var trainRoot = new GameObject("EscapeTrain");
+        trainRoot.transform.SetParent(stationRoot.transform);
+        trainRoot.transform.position = new Vector3(7.7f, 0f, -10f); // ホーム停車位置
+
+        // ── FBX モデルを優先使用 ──────────────────────────────
+        const string FBX_PATH = "Assets/Models/train/Train Metro Ginza Line 1000 Japan.fbx";
+        var trainPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(FBX_PATH);
+
+        GameObject doorGO = null;
+
+        if (trainPrefab != null)
+        {
+            var trainModel = (GameObject)PrefabUtility.InstantiatePrefab(trainPrefab, trainRoot.transform);
+            trainModel.name = "TrainModel_FBX";
+            PurgeFbxExtras(trainModel);
+            trainModel.transform.localPosition = Vector3.zero;
+            trainModel.transform.localRotation = Quaternion.Euler(0f, 90f, 0f); // FBX長軸X→Z軸に合わせる
+            trainModel.transform.localScale    = new Vector3(0.01f, 0.01f, 0.01f); // FBXがcm単位のため1/100スケール
+            ApplyTrainTextures(trainModel);
+            Debug.Log("[EscapeTrain] FBX モデルを使用しました: " + FBX_PATH);
+        }
+        else
+        {
+            // フォールバック：プロシージャル3両編成
+            Debug.LogWarning("[EscapeTrain] FBX が見つかりません。プロシージャル電車を使用します: " + FBX_PATH);
+            doorGO = BuildProceduralTrain(trainRoot.transform, WHEEL_Y);
+        }
+
+        // ── 乗車ゾーントリガー ────────────────────────────────
+        // FBX モデルのドア位置に合わせて Inspector で Z / X を調整してください
+        const float DOOR_W  = 1.5f;
+        var boardingGO = new GameObject("BoardingZone");
+        boardingGO.transform.SetParent(trainRoot.transform);
+        boardingGO.transform.localPosition = new Vector3(CAR_W * 0.5f + 0.3f, WHEEL_Y + 1.2f, 0f);
+        var boardingCol = boardingGO.AddComponent<BoxCollider>();
+        boardingCol.isTrigger = true;
+        boardingCol.size      = new Vector3(0.7f, 2.4f, DOOR_W + 0.6f);
+        boardingCol.enabled   = false; // EscapeTrain が停車後に有効化
+
+        // ── EscapeTrain コンポーネント ─────────────────────────
+        var escapeTrain = trainRoot.AddComponent<EscapeTrain>();
+        var etSO = new SerializedObject(escapeTrain);
+        etSO.FindProperty("spawnZ").floatValue        = 80f;  // 北端（+Z）から出現
+        etSO.FindProperty("stopZ").floatValue         = -10f; // 停車Z座標
+        etSO.FindProperty("testArrivalDelay").floatValue = 10f; // 10秒後に強制到着（テスト用）
+        etSO.FindProperty("startHidden").boolValue    = false; // 位置確認用（本番はtrue）
+        if (doorGO != null)
+            etSO.FindProperty("doorObject").objectReferenceValue = doorGO;
+        etSO.FindProperty("boardingZone").objectReferenceValue = boardingCol;
+
+        var barrierT = stationRoot.transform.Find("PlatformBarriers/Barrier_TrackSide");
+        if (barrierT != null)
+            etSO.FindProperty("platformBarrier").objectReferenceValue =
+                barrierT.GetComponent<Collider>();
+        else
+            Debug.LogWarning("[EscapeTrain] Barrier_TrackSide が見つかりません。Inspector で手動設定してください。");
+
+        etSO.ApplyModifiedProperties();
+        EditorUtility.SetDirty(escapeTrain);
+
+        Debug.Log($"[StationPrototype] EscapeTrain 配置完了（X={TRAIN_X:F2}, Editor:Z=0, プレイ時:Z={escapeTrain.spawnZ}）");
+    }
+
+    // ─────────────────────────────────────────────────────────
+    // FBX 電車へテクスチャを適用
+    // Assets/Models/train/textures/ の depan/side1/side2/bottom テクスチャを
+    // FBX 内マテリアル名で照合し URP Lit マテリアルを生成して割り当てる。
+    // ─────────────────────────────────────────────────────────
+    static void ApplyTrainTextures(GameObject trainModel)
+    {
+        const string TEX_DIR = "Assets/Models/train/textures/";
+
+        // 法線マップを NormalMap タイプに設定（初回のみ reimport）
+        foreach (var nm in new[] { "depan_normal", "side1_normal", "side2_normal" })
+        {
+            var imp = AssetImporter.GetAtPath(TEX_DIR + nm + ".jpeg") as TextureImporter;
+            if (imp != null && imp.textureType != TextureImporterType.NormalMap)
+            {
+                imp.textureType = TextureImporterType.NormalMap;
+                imp.SaveAndReimport();
+            }
+        }
+
+        var shader = Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard");
+
+        Texture2D LoadTex(string name) =>
+            AssetDatabase.LoadAssetAtPath<Texture2D>(TEX_DIR + name + ".jpeg");
+
+        Material MakeMat(string id, string albedoFile, string normalFile)
+        {
+            var mat = new Material(shader) { name = "Mat_Train_" + id };
+            var albedo = LoadTex(albedoFile);
+            var normal = LoadTex(normalFile);
+            if (albedo != null) mat.SetTexture("_BaseMap", albedo);
+            if (normal != null) { mat.SetTexture("_BumpMap", normal); mat.SetFloat("_BumpScale", 1f); }
+            mat.enableInstancing = true;
+            return mat;
+        }
+
+        var matDepan  = MakeMat("Depan",  "depan",  "depan_normal");
+        var matSide1  = MakeMat("Side1",  "side1",  "side1_normal");
+        var matSide2  = MakeMat("Side2",  "side2",  "side2_normal");
+        var matBottom = MakeMat("Bottom", "bottom", null);
+
+        // FBX 内の全マテリアル名をログ出力（開発確認用）
+        var renderers = trainModel.GetComponentsInChildren<MeshRenderer>(true);
+        var foundNames = new System.Collections.Generic.HashSet<string>();
+        foreach (var rend in renderers)
+            foreach (var m in rend.sharedMaterials)
+                if (m != null) foundNames.Add(m.name);
+        Debug.Log("[EscapeTrain] FBX マテリアル名一覧: " + string.Join(", ", foundNames));
+
+        // マテリアル名キーワードで照合・置換
+        int count = 0;
+        foreach (var rend in renderers)
+        {
+            var mats = rend.sharedMaterials;
+            bool changed = false;
+            for (int mi = 0; mi < mats.Length; mi++)
+            {
+                if (mats[mi] == null) continue;
+                string mname = mats[mi].name.ToLower();
+                Material rep = null;
+                if      (mname.Contains("depan") || mname.Contains("front") || mname.Contains("face"))
+                    rep = matDepan;
+                else if (mname.Contains("bottom") || mname.Contains("floor") || mname.Contains("under"))
+                    rep = matBottom;
+                else if (mname.Contains("side2") || mname.Contains("side_2"))
+                    rep = matSide2;
+                else if (mname.Contains("side1") || mname.Contains("side_1") || mname.Contains("side"))
+                    rep = matSide1;
+                if (rep != null) { mats[mi] = rep; changed = true; count++; }
+            }
+            if (changed) rend.sharedMaterials = mats;
+        }
+
+        if (count == 0)
+        {
+            // キーワード不一致の場合は全 MeshRenderer に side1 を一括適用
+            Debug.LogWarning("[EscapeTrain] マテリアル名が不一致。全 MeshRenderer に side1 テクスチャを一括適用します。");
+            foreach (var rend in renderers)
+            {
+                var mats = rend.sharedMaterials;
+                for (int mi = 0; mi < mats.Length; mi++) mats[mi] = matSide1;
+                rend.sharedMaterials = mats;
+                count += mats.Length;
+            }
+        }
+
+        Debug.Log($"[EscapeTrain] テクスチャ適用完了: {count} スロットを置換しました。");
+    }
+
+    // ─────────────────────────────────────────────────────────
+    // プロシージャル 3 両編成電車（FBX がない場合のフォールバック）
+    // 戻り値: SlideDoor GameObject（EscapeTrain.doorObject に設定）
+    // ─────────────────────────────────────────────────────────
+    static GameObject BuildProceduralTrain(Transform trainRoot, float wheelY)
+    {
+        const float CAR_L   = 14.8f;
+        const float CAR_W   = 2.7f;
+        const float CAR_H   = 3.6f;
+        const float CAR_GAP = 0.3f;
+        const int   CAR_NUM = 3;
+        float bodyCY = wheelY + CAR_H * 0.5f;
+
+        var matBody   = GetOrCreateMat("Mat_Train_Body",   new Color(0.90f, 0.88f, 0.82f));
+        var matStripe = GetOrCreateMat("Mat_Train_Stripe",  new Color(0.94f, 0.51f, 0.00f));
+        var matWindow = GetOrCreateMat("Mat_Train_Window",  new Color(0.08f, 0.10f, 0.13f));
+        var matFront  = GetOrCreateMat("Mat_Train_Front",   new Color(0.12f, 0.12f, 0.14f));
+        var matDoor   = GetOrCreateMat("Mat_Train_Door",    new Color(0.87f, 0.85f, 0.80f));
+
+        for (int i = 0; i < CAR_NUM; i++)
+        {
+            float carZ    = (i - (CAR_NUM - 1) * 0.5f) * (CAR_L + CAR_GAP);
+            var   carRoot = new GameObject($"Car_{i + 1:D2}");
+            carRoot.transform.SetParent(trainRoot);
+            carRoot.transform.localPosition = new Vector3(0f, 0f, carZ);
+
+            var body = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            body.name = "Body";
+            body.transform.SetParent(carRoot.transform);
+            body.transform.localPosition = new Vector3(0f, bodyCY, 0f);
+            body.transform.localScale    = new Vector3(CAR_W, CAR_H, CAR_L);
+            body.GetComponent<Renderer>().sharedMaterial = matBody;
+
+            var stripe = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            stripe.name = "Stripe_Orange";
+            stripe.transform.SetParent(carRoot.transform);
+            stripe.transform.localPosition = new Vector3(0f, wheelY + 0.65f, 0f);
+            stripe.transform.localScale    = new Vector3(CAR_W + 0.01f, 0.28f, CAR_L + 0.01f);
+            stripe.GetComponent<Renderer>().sharedMaterial = matStripe;
+            Object.DestroyImmediate(stripe.GetComponent<Collider>());
+
+            foreach (float side in new[] { 1f, -1f })
+            {
+                var win = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                win.name = side > 0 ? "Windows_Platform" : "Windows_Track";
+                win.transform.SetParent(carRoot.transform);
+                win.transform.localPosition = new Vector3(side * (CAR_W * 0.5f + 0.002f), wheelY + 2.0f, 0f);
+                win.transform.localScale    = new Vector3(0.02f, 0.90f, CAR_L - 1.6f);
+                win.GetComponent<Renderer>().sharedMaterial = matWindow;
+                Object.DestroyImmediate(win.GetComponent<Collider>());
+            }
+
+            if (i == 0 || i == CAR_NUM - 1)
+            {
+                float faceSign = (i == 0) ? -1f : 1f;
+                var face = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                face.name = (i == 0) ? "FrontFace" : "RearFace";
+                face.transform.SetParent(carRoot.transform);
+                face.transform.localPosition = new Vector3(0f, bodyCY, faceSign * (CAR_L * 0.5f + 0.01f));
+                face.transform.localScale    = new Vector3(CAR_W + 0.01f, CAR_H + 0.01f, 0.05f);
+                face.GetComponent<Renderer>().sharedMaterial = matFront;
+                Object.DestroyImmediate(face.GetComponent<Collider>());
+
+                bool isFront = (i == 0);
+                for (int lr = -1; lr <= 1; lr += 2)
+                {
+                    var hlGO = new GameObject(isFront ? "Headlight" : "TailLight");
+                    hlGO.transform.SetParent(carRoot.transform);
+                    hlGO.transform.localPosition = new Vector3(lr * 0.55f, wheelY + 0.8f,
+                                                               faceSign * (CAR_L * 0.5f + 0.08f));
+                    hlGO.transform.localRotation = Quaternion.Euler(0f, isFront ? 180f : 0f, 0f);
+                    var hl = hlGO.AddComponent<Light>();
+                    hl.type      = LightType.Spot;
+                    hl.color     = isFront ? new Color(0.9f, 0.95f, 1.0f) : new Color(1.0f, 0.1f, 0.1f);
+                    hl.intensity = isFront ? 20f : 8f;
+                    hl.range     = isFront ? 40f : 12f;
+                    hl.spotAngle = isFront ? 25f : 20f;
+                }
+            }
+        }
+
+        // スライドドア（中央車・ホーム側）
+        const float DOOR_W = 1.5f;
+        const float DOOR_H = 2.0f;
+        const float DOOR_D = 0.08f;
+        var doorGO = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        doorGO.name = "SlideDoor";
+        doorGO.transform.SetParent(trainRoot);
+        doorGO.transform.localPosition = new Vector3(CAR_W * 0.5f + DOOR_D * 0.5f, wheelY + DOOR_H * 0.5f, 0f);
+        doorGO.transform.localScale    = new Vector3(DOOR_D, DOOR_H, DOOR_W);
+        doorGO.GetComponent<Renderer>().sharedMaterial = matDoor;
+        return doorGO;
     }
 
     static void CreateRail(Transform parent, string name, Material mat, float x, float length)
