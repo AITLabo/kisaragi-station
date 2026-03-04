@@ -205,17 +205,36 @@ public class KisaragiStationPrototypeBuilder
         signBoard.GetComponent<Renderer>().sharedMaterial = GetOrCreateMat("Mat_Sign", new Color(0.15f, 0.15f, 0.15f));
         signBoard.isStatic = true;
 
-        // Poster（ポスター・ホーム壁面）
-        var poster = GameObject.CreatePrimitive(PrimitiveType.Cube);
-        poster.name = "Poster";
-        poster.transform.SetParent(stationRoot.transform);
-        // SouthWall_Ext_A 北面(Z=14.0)の前。階段A中心(X=6.1)に合わせる。
-        // 上り時は背面、下り時(北→南を向く)に正面が見える。
-        poster.transform.localPosition = new Vector3(6.1f, 1.8f, 14.1f);
-        poster.transform.localRotation = Quaternion.Euler(0, 0f, 0);
-        poster.transform.localScale = new Vector3(0.9f, 1.2f, 0.05f);
-        poster.GetComponent<Renderer>().sharedMaterial = GetOrCreateMat("Mat_Poster", new Color(0.75f, 0.72f, 0.65f));
-        poster.isStatic = true;
+        // 張り紙（HintBoard）– 階段前の壁に貼られた調査リスト（縦書き）
+        // 降りてくる時に正面、上り時は背面。RuntimeのHintBoardがゲーム開始時に縦書きテキストを生成。
+        {
+            var notice = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            notice.name = "HintBoard_Notice";
+            notice.transform.SetParent(stationRoot.transform);
+            notice.transform.localPosition = new Vector3(6.1f, 2.1f, 14.1f);
+            notice.transform.localRotation = Quaternion.Euler(0f, 0f, 0f);
+            notice.transform.localScale    = new Vector3(2.2f, 1.6f, 0.04f); // 横長の張り紙
+            notice.GetComponent<Renderer>().sharedMaterial =
+                GetOrCreateMat("Mat_Notice", new Color(0.92f, 0.89f, 0.80f)); // 経年した和紙色
+
+            // 縦書きテキスト（ランタイムに HintBoard.cs が書き込む）
+            var labelGO = new GameObject("HintBoard_Text");
+            labelGO.transform.SetParent(notice.transform);
+            labelGO.transform.localPosition = new Vector3(0f, 0f, -0.55f); // 紙の手前面
+            labelGO.transform.localRotation = Quaternion.Euler(0f, 180f, 0f); // +Z向き（降りてくる人の正面）
+            var tmp = labelGO.AddComponent<TMPro.TextMeshPro>();
+            tmp.text                = ""; // HintBoard.Start() で書き込まれる
+            tmp.fontSize            = 0.09f;
+            tmp.alignment           = TMPro.TextAlignmentOptions.TopRight;
+            tmp.color               = new Color(0.12f, 0.10f, 0.08f);
+            tmp.enableWordWrapping  = false;
+            tmp.rectTransform.sizeDelta = new Vector2(2.0f, 1.5f);
+
+            var hintBoard   = notice.AddComponent<HintBoard>();
+            var hintBoardSO = new SerializedObject(hintBoard);
+            hintBoardSO.FindProperty("boardText").objectReferenceValue = tmp;
+            hintBoardSO.ApplyModifiedProperties();
+        }
 
         // Clock（時計）- 右壁に掛かった駅時計
         {
@@ -486,56 +505,6 @@ public class KisaragiStationPrototypeBuilder
         canvas.AddComponent<Canvas>().renderMode = RenderMode.ScreenSpaceOverlay;
         canvas.AddComponent<UnityEngine.UI.CanvasScaler>();
         canvas.AddComponent<UnityEngine.UI.GraphicRaycaster>();
-
-        // ── 違和感ヒントパネル（画面左下）──
-        {
-            var panel = new GameObject("HintPanel");
-            panel.transform.SetParent(canvas.transform, false);
-            var panelRT = panel.AddComponent<RectTransform>();
-            panelRT.anchorMin        = new Vector2(0f, 0f);
-            panelRT.anchorMax        = new Vector2(0f, 0f);
-            panelRT.pivot            = new Vector2(0f, 0f);
-            panelRT.anchoredPosition = new Vector2(20f, 20f);
-            panelRT.sizeDelta        = new Vector2(300f, 52f);
-            var bg = panel.AddComponent<UnityEngine.UI.Image>();
-            bg.color = new Color(0f, 0f, 0f, 0.55f);
-
-            // 進行表示（右上）
-            var progressGO = new GameObject("ProgressText");
-            progressGO.transform.SetParent(panel.transform, false);
-            var pRT = progressGO.AddComponent<RectTransform>();
-            pRT.anchorMin = new Vector2(1f, 1f);
-            pRT.anchorMax = new Vector2(1f, 1f);
-            pRT.pivot     = new Vector2(1f, 1f);
-            pRT.anchoredPosition = new Vector2(-8f, -6f);
-            pRT.sizeDelta        = new Vector2(60f, 18f);
-            var progressTMP = progressGO.AddComponent<TMPro.TextMeshProUGUI>();
-            progressTMP.text      = "0 / 10";
-            progressTMP.fontSize  = 11f;
-            progressTMP.alignment = TMPro.TextAlignmentOptions.Right;
-            progressTMP.color     = new Color(0.5f, 0.5f, 0.5f, 1f);
-
-            // ヒント本文
-            var hintGO = new GameObject("HintText");
-            hintGO.transform.SetParent(panel.transform, false);
-            var hRT = hintGO.AddComponent<RectTransform>();
-            hRT.anchorMin = Vector2.zero;
-            hRT.anchorMax = Vector2.one;
-            hRT.offsetMin = new Vector2(10f, 8f);
-            hRT.offsetMax = new Vector2(-10f, -8f);
-            var hintTMP = hintGO.AddComponent<TMPro.TextMeshProUGUI>();
-            hintTMP.text      = "...";
-            hintTMP.fontSize  = 15f;
-            hintTMP.alignment = TMPro.TextAlignmentOptions.Left;
-            hintTMP.color     = new Color(0.85f, 0.82f, 0.70f, 1f);
-
-            // AnomalyHintUI コンポーネントをアサイン
-            var hintUI   = panel.AddComponent<AnomalyHintUI>();
-            var hintUISO = new SerializedObject(hintUI);
-            hintUISO.FindProperty("hintText").objectReferenceValue     = hintTMP;
-            hintUISO.FindProperty("progressText").objectReferenceValue = progressTMP;
-            hintUISO.ApplyModifiedProperties();
-        }
 
         // ── AudioManager（ambientSource・noiseSource を自動作成して割り当て）──
         var audioManagerGo = new GameObject("AudioManager");

@@ -110,8 +110,12 @@ public class GameManager : MonoBehaviour
     public string GetCurrentHint()
     {
         if (currentProgress >= correctSequence.Length) return "全ての異変を確認した";
-        string id = correctSequence[currentProgress];
-        return s_hintMap.TryGetValue(id, out string hint) ? hint : id;
+        return GetHintForID(correctSequence[currentProgress]);
+    }
+
+    public string GetHintForID(string actionID)
+    {
+        return s_hintMap.TryGetValue(actionID, out string hint) ? hint : actionID;
     }
 
     private void NotifyHint()
