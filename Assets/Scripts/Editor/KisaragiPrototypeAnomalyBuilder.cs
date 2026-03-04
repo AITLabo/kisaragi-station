@@ -56,9 +56,10 @@ public class KisaragiPrototypeAnomalyBuilder
             labelGO.transform.SetParent(root.transform);
             labelGO.transform.position = new Vector3(-1.22f, 2.2f, -15f); // ボード前面・上部
             labelGO.transform.rotation = Quaternion.Euler(0f, 90f, 0f);   // +X向き（ホーム側）
+            labelGO.transform.localScale = new Vector3(-1f, 1f, 1f);      // X反転でテキスト正順
             var tmp = labelGO.AddComponent<TMPro.TextMeshPro>();
             tmp.text      = "時刻表";
-            tmp.fontSize  = 0.5f;
+            tmp.fontSize  = 0.6f;
             tmp.alignment = TMPro.TextAlignmentOptions.Center;
             tmp.color     = Color.black;
             tmp.rectTransform.sizeDelta = new Vector2(1.0f, 0.4f);

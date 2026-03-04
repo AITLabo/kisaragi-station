@@ -245,7 +245,7 @@ public class KisaragiStationPrototypeBuilder
                 var clock = Object.Instantiate(clockAsset);
                 clock.name = "Clock";
                 clock.transform.SetParent(stationRoot.transform);
-                clock.transform.position = new Vector3(PLATFORM_W * 0.5f - 0.05f, 2.6f, 0f);
+                clock.transform.position = new Vector3(PLATFORM_W * 0.5f - 0.05f, 2.72f, 0f);
                 clock.transform.rotation = Quaternion.Euler(0f, 90f, 0f); // 壁面向き
                 clock.isStatic = true;
                 PurgeFbxExtras(clock);
