@@ -205,34 +205,35 @@ public class KisaragiStationPrototypeBuilder
         signBoard.GetComponent<Renderer>().sharedMaterial = GetOrCreateMat("Mat_Sign", new Color(0.15f, 0.15f, 0.15f));
         signBoard.isStatic = true;
 
-        // 張り紙（HintBoard）– 階段前の壁に貼られた調査リスト（縦書き）
-        // 降りてくる時に正面、上り時は背面。RuntimeのHintBoardがゲーム開始時に縦書きテキストを生成。
+        // ヒント張り紙（HintBoard）– 右壁（X=4.47, Z=5）にプレイヤーが確実に目にする位置に設置
+        // TMP は非均等スケール歪み回避のため notice キューブの子にせず独立配置。
         {
+            // 紙面キューブ（右壁に埋め込み・和紙色）
             var notice = GameObject.CreatePrimitive(PrimitiveType.Cube);
             notice.name = "HintBoard_Notice";
             notice.transform.SetParent(stationRoot.transform);
-            notice.transform.localPosition = new Vector3(6.1f, 2.1f, 14.1f);
-            notice.transform.localRotation = Quaternion.Euler(0f, 0f, 0f);
-            notice.transform.localScale    = new Vector3(2.2f, 1.6f, 0.04f); // 横長の張り紙
+            notice.transform.localPosition = new Vector3(PLATFORM_W * 0.5f - 0.02f, 2.0f, 5f);
+            notice.transform.localScale    = new Vector3(0.04f, 1.6f, 2.2f); // X=薄い, Y=高, Z=幅
             notice.GetComponent<Renderer>().sharedMaterial =
-                GetOrCreateMat("Mat_Notice", new Color(0.92f, 0.89f, 0.80f)); // 経年した和紙色
+                GetOrCreateMat("Mat_Notice", new Color(0.92f, 0.89f, 0.80f));
+            notice.isStatic = true;
 
-            // 縦書きテキスト（ランタイムに HintBoard.cs が書き込む）
+            // TMP は独立オブジェクト（スケール歪みなし）、右壁 -X 面の前に配置
             var labelGO = new GameObject("HintBoard_Text");
-            labelGO.transform.SetParent(notice.transform);
-            labelGO.transform.localPosition = new Vector3(0f, 0f, -0.55f); // 紙の手前面
-            labelGO.transform.localRotation = Quaternion.Euler(0f, 180f, 0f); // +Z向き（降りてくる人の正面）
-            var tmp = labelGO.AddComponent<TMPro.TextMeshPro>();
-            tmp.text                = ""; // HintBoard.Start() で書き込まれる
-            tmp.fontSize            = 0.09f;
-            tmp.alignment           = TMPro.TextAlignmentOptions.TopRight;
-            tmp.color               = new Color(0.12f, 0.10f, 0.08f);
-            tmp.enableWordWrapping  = false;
-            tmp.rectTransform.sizeDelta = new Vector2(2.0f, 1.5f);
+            labelGO.transform.SetParent(stationRoot.transform);
+            labelGO.transform.position = new Vector3(PLATFORM_W * 0.5f - 0.06f, 2.0f, 5f);
+            labelGO.transform.rotation = Quaternion.Euler(0f, -90f, 0f); // -X向き（ホーム側）
+            var noticeTmp = labelGO.AddComponent<TMPro.TextMeshPro>();
+            noticeTmp.text               = "";   // HintBoard.Start() で書き込まれる
+            noticeTmp.fontSize           = 0.09f;
+            noticeTmp.alignment          = TMPro.TextAlignmentOptions.TopRight;
+            noticeTmp.color              = new Color(0.12f, 0.10f, 0.08f);
+            noticeTmp.enableWordWrapping = false;
+            noticeTmp.rectTransform.sizeDelta = new Vector2(2.0f, 1.5f);
 
             var hintBoard   = notice.AddComponent<HintBoard>();
             var hintBoardSO = new SerializedObject(hintBoard);
-            hintBoardSO.FindProperty("boardText").objectReferenceValue = tmp;
+            hintBoardSO.FindProperty("boardText").objectReferenceValue = noticeTmp;
             hintBoardSO.ApplyModifiedProperties();
         }
 
