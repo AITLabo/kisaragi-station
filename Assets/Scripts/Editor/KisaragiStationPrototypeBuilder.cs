@@ -487,6 +487,56 @@ public class KisaragiStationPrototypeBuilder
         canvas.AddComponent<UnityEngine.UI.CanvasScaler>();
         canvas.AddComponent<UnityEngine.UI.GraphicRaycaster>();
 
+        // ── 違和感ヒントパネル（画面左下）──
+        {
+            var panel = new GameObject("HintPanel");
+            panel.transform.SetParent(canvas.transform, false);
+            var panelRT = panel.AddComponent<RectTransform>();
+            panelRT.anchorMin        = new Vector2(0f, 0f);
+            panelRT.anchorMax        = new Vector2(0f, 0f);
+            panelRT.pivot            = new Vector2(0f, 0f);
+            panelRT.anchoredPosition = new Vector2(20f, 20f);
+            panelRT.sizeDelta        = new Vector2(300f, 52f);
+            var bg = panel.AddComponent<UnityEngine.UI.Image>();
+            bg.color = new Color(0f, 0f, 0f, 0.55f);
+
+            // 進行表示（右上）
+            var progressGO = new GameObject("ProgressText");
+            progressGO.transform.SetParent(panel.transform, false);
+            var pRT = progressGO.AddComponent<RectTransform>();
+            pRT.anchorMin = new Vector2(1f, 1f);
+            pRT.anchorMax = new Vector2(1f, 1f);
+            pRT.pivot     = new Vector2(1f, 1f);
+            pRT.anchoredPosition = new Vector2(-8f, -6f);
+            pRT.sizeDelta        = new Vector2(60f, 18f);
+            var progressTMP = progressGO.AddComponent<TMPro.TextMeshProUGUI>();
+            progressTMP.text      = "0 / 10";
+            progressTMP.fontSize  = 11f;
+            progressTMP.alignment = TMPro.TextAlignmentOptions.Right;
+            progressTMP.color     = new Color(0.5f, 0.5f, 0.5f, 1f);
+
+            // ヒント本文
+            var hintGO = new GameObject("HintText");
+            hintGO.transform.SetParent(panel.transform, false);
+            var hRT = hintGO.AddComponent<RectTransform>();
+            hRT.anchorMin = Vector2.zero;
+            hRT.anchorMax = Vector2.one;
+            hRT.offsetMin = new Vector2(10f, 8f);
+            hRT.offsetMax = new Vector2(-10f, -8f);
+            var hintTMP = hintGO.AddComponent<TMPro.TextMeshProUGUI>();
+            hintTMP.text      = "...";
+            hintTMP.fontSize  = 15f;
+            hintTMP.alignment = TMPro.TextAlignmentOptions.Left;
+            hintTMP.color     = new Color(0.85f, 0.82f, 0.70f, 1f);
+
+            // AnomalyHintUI コンポーネントをアサイン
+            var hintUI   = panel.AddComponent<AnomalyHintUI>();
+            var hintUISO = new SerializedObject(hintUI);
+            hintUISO.FindProperty("hintText").objectReferenceValue     = hintTMP;
+            hintUISO.FindProperty("progressText").objectReferenceValue = progressTMP;
+            hintUISO.ApplyModifiedProperties();
+        }
+
         // ── AudioManager（ambientSource・noiseSource を自動作成して割り当て）──
         var audioManagerGo = new GameObject("AudioManager");
         var audioManager = audioManagerGo.AddComponent<AudioManager>();

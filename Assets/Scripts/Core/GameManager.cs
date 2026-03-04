@@ -1,4 +1,5 @@
 using UnityEngine;
+using System.Collections.Generic;
 
 // きさらぎ駅ループ – 進行・歪みの中枢管理
 // Singleton。シーン内に1つだけ配置する。
@@ -7,23 +8,36 @@ public class GameManager : MonoBehaviour
     public static GameManager Instance { get; private set; }
 
     // ──────────────────────────────────────
-    // 正解シーケンス（Inspectorで並び替え可能）
+    // 正解シーケンス（ゲーム開始時にランダムシャッフル）
     // ──────────────────────────────────────
     [Header("Sequence Settings")]
-    [Tooltip("正解順に並べたアクションID一覧（きさらぎ駅の違和感）")]
+    [Tooltip("違和感のアクションID一覧。ゲーム開始時にシャッフルされる")]
     public string[] correctSequence = new string[]
     {
-        "station_sign",  // 1. 駅名が「きさらぎ」ではない
-        "clock",         // 2. 時計が逆回り
-        "timetable",     // 3. 時刻表が白紙
-        "announcement",  // 4. 放送が日本語ではない
-        "bench",         // 5. ベンチに荷物だけある
-        "gate",          // 6. 改札が無人で開いている
-        "poster",        // 7. ポスターの人物が消えている
-        "phone",         // 8. 公衆電話が鳴っている
-        "track",         // 9. 線路が片側だけない
-        "light"          // 10. 蛍光灯が1本だけ消えている
+        "station_sign", "clock", "timetable", "announcement", "bench",
+        "gate", "poster", "phone", "track", "light"
     };
+
+    [Tooltip("trueでゲーム開始時にシーケンスをランダムシャッフルする")]
+    [SerializeField] private bool randomizeSequence = true;
+
+    // ヒント辞書（actionID → ホラー演出向けの曖昧なガイダンス）
+    private static readonly Dictionary<string, string> s_hintMap = new Dictionary<string, string>
+    {
+        { "station_sign",  "駅名を確かめろ"           },
+        { "clock",         "時を刻む音に耳を澄ませ"   },
+        { "timetable",     "時刻表を調べろ"            },
+        { "announcement",  "声が聞こえる方へ向かえ"   },
+        { "bench",         "誰かが残した物がある"       },
+        { "gate",          "改札を確認しろ"            },
+        { "poster",        "壁のポスターを見ろ"        },
+        { "phone",         "鳴り続ける電話がある"      },
+        { "track",         "線路を見渡せ"              },
+        { "light",         "暗い場所に手がかりがある"  },
+    };
+
+    /// <summary>正解 or 進行時に発火。引数: (次のヒント文字列, 現在の進行数)</summary>
+    public event System.Action<string, int> OnProgressAdvanced;
 
     [Header("Progress")]
     [ReadOnly] public int currentProgress = 0;
@@ -71,6 +85,40 @@ public class GameManager : MonoBehaviour
         ValidateReferences();
     }
 
+    private void Start()
+    {
+        if (randomizeSequence)
+            ShuffleSequence();
+
+        // 最初のヒントをUIに通知
+        NotifyHint();
+    }
+
+    // Fisher-Yates シャッフル
+    private void ShuffleSequence()
+    {
+        for (int i = correctSequence.Length - 1; i > 0; i--)
+        {
+            int j = Random.Range(0, i + 1);
+            string tmp = correctSequence[i];
+            correctSequence[i] = correctSequence[j];
+            correctSequence[j] = tmp;
+        }
+        Debug.Log("[GameManager] シーケンスをランダム化しました: " + string.Join("→", correctSequence));
+    }
+
+    public string GetCurrentHint()
+    {
+        if (currentProgress >= correctSequence.Length) return "全ての異変を確認した";
+        string id = correctSequence[currentProgress];
+        return s_hintMap.TryGetValue(id, out string hint) ? hint : id;
+    }
+
+    private void NotifyHint()
+    {
+        OnProgressAdvanced?.Invoke(GetCurrentHint(), currentProgress);
+    }
+
     private void ValidateReferences()
     {
         if (anomalyController == null) Debug.LogError("[GameManager] AnomalyController が未設定です");
@@ -115,6 +163,7 @@ public class GameManager : MonoBehaviour
         else
         {
             Debug.Log($"[GameManager] 正解: {actionID} | 進行: {currentProgress}/{correctSequence.Length}");
+            NotifyHint();
         }
     }
 
