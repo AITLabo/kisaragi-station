@@ -12,7 +12,7 @@ public class KisaragiStationPrototypeBuilder
     // 実寸（station_modeling_full_procedure）
     const float PLATFORM_L = 48f;
     const float PLATFORM_W = 9.0f;   // 旧7.0→9.0（さらに広いホーム）
-    const float PLATFORM_H = 0.25f;
+    const float PLATFORM_H = 0.5f;
     const float CEILING_H = 4.5f;     // 階段・陸橋クリアランス確保（旧3.2→4.5）
     const float WHITE_LINE_W = 0.15f;
     const float WHITE_LINE_H = 0.005f;
@@ -412,6 +412,15 @@ public class KisaragiStationPrototypeBuilder
             bNorth.transform.localScale = new Vector3(PLATFORM_W, barrierH, 0.1f);
             bNorth.GetComponent<Renderer>().enabled = false;
             bNorth.isStatic = true;
+
+            // 脱出電車側 (X = +PLATFORM_W/2 = +4.5)
+            // EscapeTrain 到着時に無効化してプレイヤーが渡れるようにする
+            var bEscape = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            bEscape.name = "Barrier_EscapeSide";
+            bEscape.transform.SetParent(barriers.transform);
+            bEscape.transform.localPosition = new Vector3(PLATFORM_W * 0.5f, barrierY, 0f);
+            bEscape.transform.localScale = new Vector3(0.1f, barrierH, PLATFORM_L);
+            bEscape.GetComponent<Renderer>().enabled = false;
         }
 
         // ── ホーム右側壁（南ゾーン：ホーム南端〜改札南端）──
@@ -472,7 +481,7 @@ public class KisaragiStationPrototypeBuilder
         camComp.backgroundColor = SkyColor;                  // ほぼ黒（夜空）
         cam.AddComponent<AudioListener>();
         cam.transform.SetParent(player.transform);
-        cam.transform.localPosition = new Vector3(0, 1.6f, 0.3f);
+        cam.transform.localPosition = new Vector3(0, 1.1f, 0.3f);
         cam.transform.localRotation = Quaternion.identity;
 
         // PlayerController に cameraTransform を設定
@@ -557,7 +566,7 @@ public class KisaragiStationPrototypeBuilder
 
         var trainRoot = new GameObject("EscapeTrain");
         trainRoot.transform.SetParent(stationRoot.transform);
-        trainRoot.transform.position = new Vector3(7.7f, 0f, -10f); // ホーム停車位置
+        trainRoot.transform.position = new Vector3(7.7f, 0f, -10f); // ユーザー指定の線路位置
 
         // ── FBX モデルを優先使用 ──────────────────────────────
         const string FBX_PATH = "Assets/Models/train/Train Metro Ginza Line 1000 Japan.fbx";
@@ -567,28 +576,49 @@ public class KisaragiStationPrototypeBuilder
 
         if (trainPrefab != null)
         {
-            var trainModel = (GameObject)PrefabUtility.InstantiatePrefab(trainPrefab, trainRoot.transform);
+            // Object.Instantiate → UnpackPrefabInstance でプレハブ接続を完全切断
+            // 切断しないとマテリアルがシーン保存時にFBX元に戻る
+            var trainModel = Object.Instantiate(trainPrefab, trainRoot.transform);
             trainModel.name = "TrainModel_FBX";
+            if (PrefabUtility.IsPartOfPrefabInstance(trainModel))
+                PrefabUtility.UnpackPrefabInstance(trainModel, PrefabUnpackMode.Completely,
+                    InteractionMode.AutomatedAction);
             PurgeFbxExtras(trainModel);
             trainModel.transform.localPosition = Vector3.zero;
-            trainModel.transform.localRotation = Quaternion.Euler(0f, 90f, 0f); // FBX長軸X→Z軸に合わせる
-            trainModel.transform.localScale    = new Vector3(0.01f, 0.01f, 0.01f); // FBXがcm単位のため1/100スケール
-            ApplyTrainTextures(trainModel);
+            trainModel.transform.localRotation = Quaternion.Euler(0f, 90f, 0f);
+            trainModel.transform.localScale    = Vector3.one;
+            ApplyTrainColors(trainModel);  // テクスチャなし・プロシージャルカラーで塗る
+            doorGO = CreateSlideDoor(trainRoot.transform, -1.4f); // ホーム向き（-X側）
+            AddTrainHeadlights(trainRoot.transform);
+            AddTrainFrontPanel(trainRoot.transform);  // FBXにフロント面がない場合の補完
             Debug.Log("[EscapeTrain] FBX モデルを使用しました: " + FBX_PATH);
         }
         else
         {
-            // フォールバック：プロシージャル3両編成
             Debug.LogWarning("[EscapeTrain] FBX が見つかりません。プロシージャル電車を使用します: " + FBX_PATH);
             doorGO = BuildProceduralTrain(trainRoot.transform, WHEEL_Y);
         }
 
-        // ── 乗車ゾーントリガー ────────────────────────────────
-        // FBX モデルのドア位置に合わせて Inspector で Z / X を調整してください
+        // ── ホームと電車の隙間を埋める渡り板 ──────────────────
+        // 電車到着前は Z=80 にあるのでプレイヤーに届かない。
+        // 停車後(Z=-10)に platform edge(world X=+4.5) と train -X face(world X≈6.3) を繋ぐ。
+        {
+            const float PLATFORM_EDGE_X = PLATFORM_W * 0.5f;  // +4.5
+            const float TRAIN_WORLD_X   = 7.7f;
+            const float DOOR_OFFSET     = 1.4f;
+            float gapW        = TRAIN_WORLD_X - PLATFORM_EDGE_X - DOOR_OFFSET; // ≈1.8m
+            float bridgeLX    = -(DOOR_OFFSET + gapW * 0.5f);
+            var bridgeGO = new GameObject("BoardingBridge");
+            bridgeGO.transform.SetParent(trainRoot.transform);
+            bridgeGO.transform.localPosition = new Vector3(bridgeLX, PLATFORM_H * 0.5f, 0f);
+            bridgeGO.AddComponent<BoxCollider>().size = new Vector3(gapW + 0.05f, PLATFORM_H, PLATFORM_L + 4f);
+        }
+
+        // ── 乗車ゾーントリガー（ドア内側、-X方向） ──────────
         const float DOOR_W  = 1.5f;
         var boardingGO = new GameObject("BoardingZone");
         boardingGO.transform.SetParent(trainRoot.transform);
-        boardingGO.transform.localPosition = new Vector3(CAR_W * 0.5f + 0.3f, WHEEL_Y + 1.2f, 0f);
+        boardingGO.transform.localPosition = new Vector3(-0.8f, WHEEL_Y + 1.2f, 0f);
         var boardingCol = boardingGO.AddComponent<BoxCollider>();
         boardingCol.isTrigger = true;
         boardingCol.size      = new Vector3(0.7f, 2.4f, DOOR_W + 0.6f);
@@ -605,17 +635,152 @@ public class KisaragiStationPrototypeBuilder
             etSO.FindProperty("doorObject").objectReferenceValue = doorGO;
         etSO.FindProperty("boardingZone").objectReferenceValue = boardingCol;
 
-        var barrierT = stationRoot.transform.Find("PlatformBarriers/Barrier_TrackSide");
+        // 到着時に無効化するバリア = 脱出電車側バリア（ホーム +X 端）
+        var barrierT = stationRoot.transform.Find("PlatformBarriers/Barrier_EscapeSide");
         if (barrierT != null)
             etSO.FindProperty("platformBarrier").objectReferenceValue =
                 barrierT.GetComponent<Collider>();
         else
-            Debug.LogWarning("[EscapeTrain] Barrier_TrackSide が見つかりません。Inspector で手動設定してください。");
+            Debug.LogWarning("[EscapeTrain] Barrier_EscapeSide が見つかりません。Inspector で手動設定してください。");
 
         etSO.ApplyModifiedProperties();
         EditorUtility.SetDirty(escapeTrain);
 
         Debug.Log($"[StationPrototype] EscapeTrain 配置完了（X={TRAIN_X:F2}, Editor:Z=0, プレイ時:Z={escapeTrain.spawnZ}）");
+    }
+
+    // ─────────────────────────────────────────────────────────
+    // スライドドアパネル生成（FBX用）
+    // ホームに面する側（-X）に配置。Inspector で微調整してください。
+    // ─────────────────────────────────────────────────────────
+    // localX: ドアを置く X 位置（+1.4=ホーム向き, -1.4=線路向き）
+    static GameObject CreateSlideDoor(Transform trainRoot, float localX = +1.4f)
+    {
+        var door = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        door.name = "SlideDoor";
+        door.transform.SetParent(trainRoot);
+        // 底面が Y=0（地面）に合わさるよう中心を Y=1.0 に設定。
+        // Collider は残す → 閉まっている間はプレイヤーが落ちない。
+        // OpenDoor() が 2.1m 上昇させると底面が Y=2.1 → 完全に頭上へ退避。
+        door.transform.localPosition = new Vector3(localX, 1.0f, 0f);
+        door.transform.localScale    = new Vector3(0.06f, 2.0f, 1.4f);
+        var mat = new Material(Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard"));
+        mat.color = new Color(0.25f, 0.25f, 0.28f, 1f);
+        door.GetComponent<Renderer>().sharedMaterial = mat;
+        return door;
+    }
+
+    // ─────────────────────────────────────────────────────────
+    // ヘッドライト追加（進行方向 = -Z 先端、左右2灯）
+    // ─────────────────────────────────────────────────────────
+    static void AddTrainHeadlights(Transform trainRoot)
+    {
+        // ── ヘッドライト（先頭2灯） ──
+        foreach (float xOff in new[] { -0.8f, 0.8f })
+        {
+            var go = new GameObject("Headlight");
+            go.transform.SetParent(trainRoot);
+            go.transform.localPosition = new Vector3(xOff, 2.0f, -10f);
+            go.transform.localRotation = Quaternion.Euler(8f, 180f, 0f);
+            var lt = go.AddComponent<Light>();
+            lt.type      = LightType.Spot;
+            lt.color     = new Color(0.95f, 0.93f, 0.82f);
+            lt.intensity = 4f;
+            lt.range     = 40f;
+            lt.spotAngle = 32f;
+            lt.shadows   = LightShadows.Soft;
+        }
+
+        // ── 車体照明：ホーム側（-X）を照らすポイントライト ──
+        // 電車が X=7.7 でホームの蛍光灯圏外のため車体が暗くなるのを補正
+        var bodyLight = new GameObject("TrainBodyLight");
+        bodyLight.transform.SetParent(trainRoot);
+        bodyLight.transform.localPosition = new Vector3(-3.5f, 2.5f, 0f); // ホーム側・中央高さ
+        var bl = bodyLight.AddComponent<Light>();
+        bl.type      = LightType.Point;
+        bl.color     = new Color(0.85f, 0.88f, 1.0f); // 青白い夜間光
+        bl.intensity = 2.5f;
+        bl.range     = 12f;
+        bl.shadows   = LightShadows.None;
+    }
+
+    // ─────────────────────────────────────────────────────────
+    // FBXにフロント面がない場合の補完パネル（-Z側先端に暗めのグレー板を追加）
+    // ─────────────────────────────────────────────────────────
+    static void AddTrainFrontPanel(Transform trainRoot)
+    {
+        // FBX の列車長さを Bounds から推定、なければデフォルト20m
+        float halfLen = 10f;
+        var renderers = trainRoot.GetComponentsInChildren<MeshRenderer>(true);
+        if (renderers.Length > 0)
+        {
+            var b = renderers[0].bounds;
+            foreach (var r in renderers) b.Encapsulate(r.bounds);
+            halfLen = b.extents.z;
+            if (halfLen < 1f) halfLen = 10f; // 異常値ガード
+        }
+
+        // -Z 側フロント（進行方向の先頭）
+        var panel = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        panel.name = "FrontPanel";
+        panel.transform.SetParent(trainRoot);
+        panel.transform.localPosition = new Vector3(0f, 1.5f, -halfLen);
+        panel.transform.localScale    = new Vector3(2.8f, 3.0f, 0.15f);
+        var mat = new Material(Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard"));
+        mat.SetColor("_BaseColor", new Color(0.45f, 0.43f, 0.40f));
+        mat.SetColor("_Color",     new Color(0.45f, 0.43f, 0.40f));
+        panel.GetComponent<Renderer>().sharedMaterial = mat;
+        Object.DestroyImmediate(panel.GetComponent<BoxCollider>());
+        Debug.Log($"[EscapeTrain] フロントパネル追加: localZ={-halfLen:F1}");
+    }
+
+    // ─────────────────────────────────────────────────────────
+    // FBX 電車へプロシージャルカラーを適用（AssetDatabase 不使用・インラインマテリアル）
+    // Object.Instantiate でプレハブ接続を切った後に呼ぶこと。
+    // ─────────────────────────────────────────────────────────
+    static void ApplyTrainColors(GameObject trainModel)
+    {
+        var shader = Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard");
+
+        // インラインマテリアルを生成（_BaseColor を明示設定）
+        Material M(Color col)
+        {
+            var m = new Material(shader);
+            m.SetColor("_BaseColor", col); // URP Lit の主色プロパティ
+            m.SetColor("_Color",     col); // Standard シェーダー用フォールバック
+            return m;
+        }
+
+        var matBody   = M(new Color(0.82f, 0.77f, 0.67f)); // くすんだクリーム（少し明るめ）
+        var matStripe = M(new Color(0.20f, 0.10f, 0.04f)); // こげ茶
+        var matWindow = M(new Color(0.05f, 0.06f, 0.09f)); // ほぼ黒
+        var matFront  = M(new Color(0.50f, 0.48f, 0.44f)); // ダークグレー
+
+        // Renderer 基底クラスで取得（MeshRenderer + SkinnedMeshRenderer 両対応）
+        var renderers = trainModel.GetComponentsInChildren<Renderer>(true);
+        var names = new System.Collections.Generic.List<string>();
+        foreach (var r in renderers)
+            foreach (var m in r.sharedMaterials) if (m != null && !names.Contains(m.name)) names.Add(m.name);
+        Debug.Log("[EscapeTrain] FBXマテリアル名: " + string.Join(", ", names));
+
+        foreach (var rend in renderers)
+        {
+            var mats = rend.sharedMaterials;
+            for (int i = 0; i < mats.Length; i++)
+            {
+                string n = mats[i] != null ? mats[i].name.ToLower() : "";
+                if      (n.Contains("#27") || n.Contains("window") || n.Contains("glass"))
+                    mats[i] = matWindow;
+                else if (n.Contains("#25") || n.Contains("stripe"))
+                    mats[i] = matStripe;
+                else if (n.Contains("#28") || n.Contains("front") || n.Contains("cab"))
+                    mats[i] = matFront;
+                else
+                    mats[i] = matBody;  // #26 ・その他すべて → クリーム
+            }
+            rend.sharedMaterials = mats;
+        }
+        Debug.Log($"[EscapeTrain] カラー適用完了 ({renderers.Length} renderers)");
     }
 
     // ─────────────────────────────────────────────────────────
@@ -650,6 +815,8 @@ public class KisaragiStationPrototypeBuilder
             var normal = LoadTex(normalFile);
             if (albedo != null) mat.SetTexture("_BaseMap", albedo);
             if (normal != null) { mat.SetTexture("_BumpMap", normal); mat.SetFloat("_BumpScale", 1f); }
+            // 暗め補正（0=真っ黒, 1=元色）
+            mat.SetColor("_BaseColor", new Color(0.55f, 0.55f, 0.55f, 1f));
             mat.enableInstancing = true;
             return mat;
         }

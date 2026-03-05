@@ -50,6 +50,11 @@ public class EscapeTrain : MonoBehaviour
     {
         if (boardingZone != null) boardingZone.enabled = false;
 
+        // doorObject 未設定時は子から名前で自動検索
+        if (doorObject == null)
+            doorObject = transform.Find("SlideDoor")?.gameObject;
+        Debug.Log($"[EscapeTrain] doorObject = {(doorObject != null ? doorObject.name : "null (ドアアニメなし)")}");
+
         // SetActive(false) はコルーチン不可になるため使わない。
         // 代わりに Renderer を無効化して見た目だけ隠す。
         if (startHidden || testArrivalDelay > 0f)
