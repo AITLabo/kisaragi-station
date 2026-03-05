@@ -31,6 +31,15 @@ public class InteractionSystem : MonoBehaviour
 
         if (interactPromptText != null)
             interactPromptText.gameObject.SetActive(false);
+
+        // 起動時に参照状態をすべてログ出力
+        Debug.Log($"[InteractionSystem] Awake:" +
+                  $"\n  playerCamera    = {(playerCamera    != null ? playerCamera.name    : "NULL !!!")}" +
+                  $"\n  reticleText     = {(reticleText     != null ? reticleText.name     : "NULL !!!")}" +
+                  $"\n  reticleImage    = {(reticleImage    != null ? reticleImage.name    : "NULL")}" +
+                  $"\n  interactPrompt  = {(interactPromptText != null ? interactPromptText.name : "NULL !!!")}" +
+                  $"\n  interactDist    = {interactDistance}" +
+                  $"\n  interactLayer   = {interactableLayer.value}");
     }
 
     private void Update()
@@ -47,19 +56,31 @@ public class InteractionSystem : MonoBehaviour
         }
     }
 
+    private float _logTimer;
+
     private void DetectTarget()
     {
+        if (playerCamera == null) return;
+
         // 画面中央から Raycast
         Ray ray = playerCamera.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f));
-
-        // interactableLayer が 0（未設定）の場合は全レイヤーを対象にするフォールバック
-        // ※ Edit > Project Settings > Tags and Layers で "Interactable" を追加すると正常動作
         LayerMask effectiveMask = (interactableLayer.value == 0) ? ~0 : interactableLayer;
 
         if (Physics.Raycast(ray, out RaycastHit hit, interactDistance, effectiveMask))
         {
             // GetComponentInParent で FBX 子コライダーも含めて検索
             IInteractable found = hit.collider.GetComponentInParent<IInteractable>();
+
+            // 1秒おきにレイの当たり先をログ
+            _logTimer -= Time.deltaTime;
+            if (_logTimer <= 0f)
+            {
+                _logTimer = 1f;
+                Debug.Log($"[InteractionSystem] Ray hit: {hit.collider.gameObject.name}" +
+                          $" dist={hit.distance:F1}m" +
+                          $" IInteractable={(found != null ? found.ActionID : "なし")}");
+            }
+
             if (found != null)
             {
                 currentTarget = found;

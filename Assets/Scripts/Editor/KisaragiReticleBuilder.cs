@@ -12,8 +12,10 @@ public class KisaragiReticleBuilder
     {
         // ── UI Canvas を確認 ──
         GameObject canvasGO = GameObject.Find("UI Canvas");
+        Debug.Log($"[Reticle] BuildReticle 開始 / UI Canvas = {(canvasGO != null ? canvasGO.name : "NULL")}");
         if (canvasGO == null)
         {
+            Debug.LogError("[Reticle] UI Canvas が見つかりません！先に Station Prototype を実行してください。");
             EditorUtility.DisplayDialog("エラー",
                 "UI Canvas が見つかりません。\n先に Station Prototype ビルドを実行してください。", "OK");
             return;
@@ -46,10 +48,11 @@ public class KisaragiReticleBuilder
 
         // Image は sprite 未設定だと描画されないため TMP_Text で代替
         var reticleTxt = GetOrAddComponent<TextMeshProUGUI>(reticleGO);
-        reticleTxt.text      = "＋";
-        reticleTxt.fontSize  = 18f;
-        reticleTxt.color     = new Color(1f, 1f, 1f, 0.7f);
+        reticleTxt.text      = "+";   // 半角（全角だとフォント未設定で非表示になる）
+        reticleTxt.fontSize  = 22f;
+        reticleTxt.color     = new Color(1f, 1f, 1f, 0.8f);
         reticleTxt.alignment = TextAlignmentOptions.Center;
+        reticleTxt.fontStyle = FontStyles.Bold;
 
         // InteractionSystem が参照する Image も用意（非表示の1px Image で代用）
         Image img = GetOrAddComponent<Image>(reticleGO);
@@ -95,7 +98,10 @@ public class KisaragiReticleBuilder
                 so.FindProperty("playerCamera").objectReferenceValue = cam;
 
             so.ApplyModifiedProperties();
-            Debug.Log("[Reticle] InteractionSystem に reticleImage / interactPromptText / playerCamera を設定しました");
+            Debug.Log($"[Reticle] InteractionSystem 参照設定完了:" +
+                      $"\n  reticleText  = {(reticleTxt != null ? reticleTxt.name : "NULL")}" +
+                      $"\n  promptText   = {(promptTxt  != null ? promptTxt.name  : "NULL")}" +
+                      $"\n  camera       = {(cam        != null ? cam.name        : "NULL")}");
         }
 
         UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(
