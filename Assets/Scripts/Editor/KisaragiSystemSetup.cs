@@ -46,6 +46,7 @@ public class KisaragiSystemSetup
     // ダイアログなしで全処理を実行（BuildAll から呼ぶ用）
     public static void SetupSilent()
     {
+        EnsureResetPointAndFadePanel(); // LoopController が必要とする UI を先に用意
         SetupSystemManagers();
         SetupAudioManagerSources();
         AssignAllReferences();
@@ -54,6 +55,42 @@ public class KisaragiSystemSetup
         UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(
             UnityEditor.SceneManagement.EditorSceneManager.GetActiveScene());
         Debug.Log("[SystemSetup] システム自動設定完了（サイレント）");
+    }
+
+    // LoopController（ソフトループ）に必要な ResetPoint と FadePanel を生成
+    static void EnsureResetPointAndFadePanel()
+    {
+        // ResetPoint（プレイヤーのループ後テレポート先）
+        if (GameObject.Find("ResetPoint") == null)
+        {
+            var rp = new GameObject("ResetPoint");
+            rp.transform.position = new Vector3(0f, 0.5f, 0f); // ホーム中央
+            Debug.Log("[SystemSetup] ResetPoint を生成しました");
+        }
+
+        // FadePanel（フェードイン/アウト用 UI）
+        if (GameObject.Find("FadePanel") != null) return;
+
+        // Canvas を探すか生成
+        var canvasGO = GameObject.Find("UI Canvas") ?? GameObject.Find("Canvas");
+        if (canvasGO == null)
+        {
+            canvasGO = new GameObject("UI Canvas");
+            canvasGO.AddComponent<UnityEngine.Canvas>().renderMode = UnityEngine.RenderMode.ScreenSpaceOverlay;
+            canvasGO.AddComponent<UnityEngine.UI.CanvasScaler>();
+            canvasGO.AddComponent<UnityEngine.UI.GraphicRaycaster>();
+        }
+
+        var fp = new GameObject("FadePanel");
+        fp.transform.SetParent(canvasGO.transform, false);
+        var rt = fp.AddComponent<UnityEngine.RectTransform>();
+        rt.anchorMin = Vector2.zero;
+        rt.anchorMax = Vector2.one;
+        rt.offsetMin = rt.offsetMax = Vector2.zero;
+        var img = fp.AddComponent<UnityEngine.UI.Image>();
+        img.color = new Color(0f, 0f, 0f, 1f);
+        fp.AddComponent<UnityEngine.CanvasGroup>().alpha = 0f;
+        Debug.Log("[SystemSetup] FadePanel を生成しました");
     }
 
     // ──────────────────────────────────────
