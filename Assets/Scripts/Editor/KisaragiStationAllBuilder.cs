@@ -64,6 +64,16 @@ public class KisaragiStationAllBuilder
         Debug.Log("[BuildAll] ⑥ Build Reticle...");
         KisaragiReticleBuilder.BuildReticle();
 
-        Debug.Log("[BuildAll] 駅シーン一括構築完了");
+        // ⑦ システムマネージャー配置・全参照自動設定
+        Debug.Log("[BuildAll] ⑦ Setup All Systems...");
+        KisaragiSystemSetup.SetupSilent();
+
+        // 最終シーン保存（SystemSetup が MarkDirty するため再保存が必要）
+        var scenePath = UnityEditor.SceneManagement.EditorSceneManager.GetActiveScene().path;
+        if (!string.IsNullOrEmpty(scenePath))
+            UnityEditor.SceneManagement.EditorSceneManager.SaveScene(
+                UnityEditor.SceneManagement.EditorSceneManager.GetActiveScene());
+
+        Debug.Log("[BuildAll] 駅シーン一括構築完了（システム配置・参照設定含む）");
     }
 }

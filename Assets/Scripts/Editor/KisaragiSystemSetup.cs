@@ -43,6 +43,19 @@ public class KisaragiSystemSetup
             "OK");
     }
 
+    // ダイアログなしで全処理を実行（BuildAll から呼ぶ用）
+    public static void SetupSilent()
+    {
+        SetupSystemManagers();
+        SetupAudioManagerSources();
+        AssignAllReferences();
+        FixRails();
+        FixMouseSensitivity();
+        UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(
+            UnityEditor.SceneManagement.EditorSceneManager.GetActiveScene());
+        Debug.Log("[SystemSetup] システム自動設定完了（サイレント）");
+    }
+
     // ──────────────────────────────────────
     // 1. システムマネージャーを追加
     // ──────────────────────────────────────
@@ -50,12 +63,25 @@ public class KisaragiSystemSetup
     {
         int count = 0;
 
+        // コアシステム（DontDestroyOnLoad 対象）
+        count += EnsureManager<GameManager>("GameManager");
+        count += EnsureManager<SceneFlowManager>("SceneFlowManager");
+        count += EnsureManager<LogManager>("LogManager");
+
+        // 歪み・オーディオ・環境
+        count += EnsureManager<AnomalyController>("AnomalyController");
+        count += EnsureManager<AudioManager>("AudioManager");
+        count += EnsureManager<EnvironmentManager>("EnvironmentManager");
+
+        // ループ制御
+        count += EnsureManager<LoopController>("LoopController");
         count += EnsureManager<LoopManager>("LoopManager");
+        count += EnsureManager<VariantController>("VariantController");
+
+        // その他
         count += EnsureManager<ActionManager>("ActionManager");
         count += EnsureManager<SaveManager>("SaveManager");
         count += EnsureManager<EventManager>("EventManager");
-        count += EnsureManager<EnvironmentManager>("EnvironmentManager");
-        count += EnsureManager<SceneFlowManager>("SceneFlowManager");
         count += EnsureManager<TimelineDirectorManager>("TimelineDirectorManager");
 
         // ActionManager に LoopController を自動アサイン
