@@ -15,7 +15,8 @@ public class InteractionSystem : MonoBehaviour
     [SerializeField] private TextMeshProUGUI interactPromptText;
 
     [Header("Reticle")]
-    [SerializeField] private UnityEngine.UI.Image reticleImage; // 画面中央の照準
+    [SerializeField] private UnityEngine.UI.Image reticleImage; // 画面中央の照準（透明Image）
+    [SerializeField] private TMPro.TextMeshProUGUI reticleText;  // 実際に描画するTMP「＋」
 
     private IInteractable currentTarget;
 
@@ -57,7 +58,8 @@ public class InteractionSystem : MonoBehaviour
 
         if (Physics.Raycast(ray, out RaycastHit hit, interactDistance, effectiveMask))
         {
-            IInteractable found = hit.collider.GetComponent<IInteractable>();
+            // GetComponentInParent で FBX 子コライダーも含めて検索
+            IInteractable found = hit.collider.GetComponentInParent<IInteractable>();
             if (found != null)
             {
                 currentTarget = found;
@@ -83,9 +85,9 @@ public class InteractionSystem : MonoBehaviour
     // レティクルの色をハイライト切り替え
     private void SetReticleHighlight(bool highlight)
     {
-        if (reticleImage == null) return;
-        reticleImage.color = highlight
-            ? new Color(1f, 0.8f, 0.2f, 0.9f)  // 黄色：対象あり
-            : new Color(1f, 1f, 1f, 0.5f);       // 白：通常
+        var yellow = new Color(1f, 0.8f, 0.2f, 0.95f);
+        var white  = new Color(1f, 1f,   1f,   0.70f);
+        if (reticleText  != null) reticleText.color  = highlight ? yellow : white;
+        if (reticleImage != null) reticleImage.color = new Color(0f, 0f, 0f, 0f); // 常に透明
     }
 }

@@ -36,16 +36,24 @@ public class KisaragiReticleBuilder
             Debug.LogWarning("[Reticle] Player が見つかりません。InteractionSystem の参照設定をスキップします。");
         }
 
-        // ── レティクル（画面中央の小さい丸） ──
+        // ── レティクル（画面中央の十字）TMP_Text で確実に描画 ──
         GameObject reticleGO = GetOrCreateChild(canvasGO, "Reticle");
         RectTransform rt = GetOrAddComponent<RectTransform>(reticleGO);
         rt.anchorMin = new Vector2(0.5f, 0.5f);
         rt.anchorMax = new Vector2(0.5f, 0.5f);
-        rt.sizeDelta = new Vector2(12f, 12f);
+        rt.sizeDelta = new Vector2(40f, 40f);
         rt.anchoredPosition = Vector2.zero;
 
+        // Image は sprite 未設定だと描画されないため TMP_Text で代替
+        var reticleTxt = GetOrAddComponent<TextMeshProUGUI>(reticleGO);
+        reticleTxt.text      = "＋";
+        reticleTxt.fontSize  = 18f;
+        reticleTxt.color     = new Color(1f, 1f, 1f, 0.7f);
+        reticleTxt.alignment = TextAlignmentOptions.Center;
+
+        // InteractionSystem が参照する Image も用意（非表示の1px Image で代用）
         Image img = GetOrAddComponent<Image>(reticleGO);
-        img.color = new Color(1f, 1f, 1f, 0.5f);
+        img.color = new Color(0f, 0f, 0f, 0f); // 透明（TMP_Text を前面に出す）
 
         // ── InteractPrompt（インタラクト促進テキスト） ──
         // 既存を探すか、Canvas の子として新規作成
@@ -72,6 +80,7 @@ public class KisaragiReticleBuilder
             var so = new SerializedObject(iSys);
 
             so.FindProperty("reticleImage").objectReferenceValue       = img;
+            so.FindProperty("reticleText").objectReferenceValue        = reticleTxt;
             so.FindProperty("interactPromptText").objectReferenceValue = promptTxt;
 
             // playerCamera: MainCamera を自動検索
