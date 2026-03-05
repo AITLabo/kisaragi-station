@@ -7,7 +7,7 @@ using TMPro;
 public class InteractionSystem : MonoBehaviour
 {
     [Header("Raycast Settings")]
-    [SerializeField] private float interactDistance = 4f;
+    [SerializeField] private float interactDistance = 8f;
     [SerializeField] private LayerMask interactableLayer;
 
     [Header("References")]
@@ -15,8 +15,7 @@ public class InteractionSystem : MonoBehaviour
     [SerializeField] private TextMeshProUGUI interactPromptText;
 
     [Header("Reticle")]
-    [SerializeField] private UnityEngine.UI.Image reticleImage; // 画面中央の照準（透明Image）
-    [SerializeField] private TMPro.TextMeshProUGUI reticleText;  // 実際に描画するTMP「＋」
+    [SerializeField] private ReticleHUD reticleHUD; // 画面中央の「+」（OnGUI, Canvas不要）
 
     private IInteractable currentTarget;
 
@@ -29,17 +28,36 @@ public class InteractionSystem : MonoBehaviour
                 Debug.LogError("[InteractionSystem] playerCamera が見つかりません");
         }
 
+        // シリアライズ参照がなければ自動取得・追加（フォールバック）
+        if (reticleHUD == null)
+        {
+            reticleHUD = Object.FindObjectOfType<ReticleHUD>();
+        }
+        if (reticleHUD == null)
+        {
+            // どこにも無ければ自分自身に追加（確実に動く）
+            reticleHUD = gameObject.AddComponent<ReticleHUD>();
+            Debug.Log("[InteractionSystem] ReticleHUD を自動追加しました");
+        }
+        if (interactPromptText == null)
+        {
+            var pGO = GameObject.Find("InteractPrompt");
+            if (pGO != null) interactPromptText = pGO.GetComponent<TMPro.TextMeshProUGUI>();
+        }
+
         if (interactPromptText != null)
             interactPromptText.gameObject.SetActive(false);
 
         // 起動時に参照状態をすべてログ出力
         Debug.Log($"[InteractionSystem] Awake:" +
                   $"\n  playerCamera    = {(playerCamera    != null ? playerCamera.name    : "NULL !!!")}" +
-                  $"\n  reticleText     = {(reticleText     != null ? reticleText.name     : "NULL !!!")}" +
-                  $"\n  reticleImage    = {(reticleImage    != null ? reticleImage.name    : "NULL")}" +
+                  $"\n  reticleHUD      = {(reticleHUD      != null ? reticleHUD.name      : "NULL !!!")}" +
                   $"\n  interactPrompt  = {(interactPromptText != null ? interactPromptText.name : "NULL !!!")}" +
                   $"\n  interactDist    = {interactDistance}" +
                   $"\n  interactLayer   = {interactableLayer.value}");
+
+        if (reticleHUD == null)
+            Debug.LogError("[InteractionSystem] reticleHUD が NULL！再ビルドしてください。");
     }
 
     private void Update()
@@ -56,33 +74,23 @@ public class InteractionSystem : MonoBehaviour
         }
     }
 
-    private float _logTimer;
-
     private void DetectTarget()
     {
         if (playerCamera == null) return;
 
-        // 画面中央から Raycast
         Ray ray = playerCamera.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f));
-        LayerMask effectiveMask = (interactableLayer.value == 0) ? ~0 : interactableLayer;
+        RaycastHit[] hits = (interactableLayer.value == 0)
+            ? Physics.RaycastAll(ray, interactDistance)
+            : Physics.RaycastAll(ray, interactDistance, interactableLayer);
+        System.Array.Sort(hits, (a, b) => a.distance.CompareTo(b.distance));
 
-        if (Physics.Raycast(ray, out RaycastHit hit, interactDistance, effectiveMask))
+        foreach (var hit in hits)
         {
-            // GetComponentInParent で FBX 子コライダーも含めて検索
             IInteractable found = hit.collider.GetComponentInParent<IInteractable>();
-
-            // 1秒おきにレイの当たり先をログ
-            _logTimer -= Time.deltaTime;
-            if (_logTimer <= 0f)
-            {
-                _logTimer = 1f;
-                Debug.Log($"[InteractionSystem] Ray hit: {hit.collider.gameObject.name}" +
-                          $" dist={hit.distance:F1}m" +
-                          $" IInteractable={(found != null ? found.ActionID : "なし")}");
-            }
-
             if (found != null)
             {
+                if (found != currentTarget)
+                    Debug.Log($"[InteractionSystem] Target: {found.ActionID} ({hit.collider.gameObject.name} dist={hit.distance:F1}m)");
                 currentTarget = found;
                 ShowPrompt(true, hit.collider.gameObject.name);
                 SetReticleHighlight(true);
@@ -90,6 +98,8 @@ public class InteractionSystem : MonoBehaviour
             }
         }
 
+        if (currentTarget != null)
+            Debug.Log("[InteractionSystem] Target lost");
         currentTarget = null;
         ShowPrompt(false, "");
         SetReticleHighlight(false);
@@ -106,9 +116,9 @@ public class InteractionSystem : MonoBehaviour
     // レティクルの色をハイライト切り替え
     private void SetReticleHighlight(bool highlight)
     {
-        var yellow = new Color(1f, 0.8f, 0.2f, 0.95f);
-        var white  = new Color(1f, 1f,   1f,   0.70f);
-        if (reticleText  != null) reticleText.color  = highlight ? yellow : white;
-        if (reticleImage != null) reticleImage.color = new Color(0f, 0f, 0f, 0f); // 常に透明
+        if (reticleHUD == null) return;
+        reticleHUD.color = highlight
+            ? new Color(1f, 0.85f, 0.1f, 1f)   // 黄色
+            : new Color(0.2f, 1f,   0.5f, 1f);  // 緑
     }
 }

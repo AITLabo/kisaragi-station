@@ -318,6 +318,17 @@ public class KisaragiSystemSetup
                 if (tmp != null)
                     so.FindProperty("interactPromptText").objectReferenceValue = tmp;
             }
+
+            // ReticleHUD を Player から取得してアサイン
+            var playerGO = GameObject.Find("Player");
+            if (playerGO != null)
+            {
+                var hud = playerGO.GetComponent<ReticleHUD>() ?? playerGO.AddComponent<ReticleHUD>();
+                so.FindProperty("reticleHUD").objectReferenceValue = hud;
+            }
+
+            // 射程を 8m に設定（4m だと壁オブジェクトに届かないため）
+            so.FindProperty("interactDistance").floatValue = 8f;
             so.ApplyModifiedProperties();
             count++;
         }
