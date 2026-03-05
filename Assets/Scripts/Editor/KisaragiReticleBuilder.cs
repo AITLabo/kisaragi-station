@@ -54,9 +54,7 @@ public class KisaragiReticleBuilder
         reticleTxt.alignment = TextAlignmentOptions.Center;
         reticleTxt.fontStyle = FontStyles.Bold;
 
-        // InteractionSystem が参照する Image も用意（非表示の1px Image で代用）
-        Image img = GetOrAddComponent<Image>(reticleGO);
-        img.color = new Color(0f, 0f, 0f, 0f); // 透明（TMP_Text を前面に出す）
+        // Image は TMP_Text と同一 GO に追加不可のため使用しない（reticleImage 参照は null のまま）
 
         // ── InteractPrompt（インタラクト促進テキスト） ──
         // 既存を探すか、Canvas の子として新規作成
@@ -82,8 +80,8 @@ public class KisaragiReticleBuilder
         {
             var so = new SerializedObject(iSys);
 
-            so.FindProperty("reticleImage").objectReferenceValue       = img;
             so.FindProperty("reticleText").objectReferenceValue        = reticleTxt;
+            // reticleImage は使用しない（TMP_Text に置き換え済み）
             so.FindProperty("interactPromptText").objectReferenceValue = promptTxt;
 
             // playerCamera: MainCamera を自動検索
