@@ -19,8 +19,7 @@ public class KisaragiPrototypeAnomalyBuilder
         }
 
         var root = new GameObject("KisaragiAnomalies");
-        int layer = LayerMask.NameToLayer("Interactable");
-        if (layer == -1) layer = 0;
+        int layer = EnsureInteractableLayer();
 
         // ────────────────────────────────────────────────
         // 10個の違和感オブジェクト（StationPrototype座標系）
@@ -314,6 +313,31 @@ public class KisaragiPrototypeAnomalyBuilder
         var mat = new Material(Shader.Find("Universal Render Pipeline/Lit"));
         mat.color = color;
         r.sharedMaterial = mat;
+    }
+
+    // "Interactable" レイヤーが存在しなければ TagManager に自動追加する
+    static int EnsureInteractableLayer()
+    {
+        int layer = LayerMask.NameToLayer("Interactable");
+        if (layer != -1) return layer;
+
+        // ProjectSettings/TagManager.asset を編集して追加
+        var tagManager = new SerializedObject(
+            AssetDatabase.LoadAllAssetsAtPath("ProjectSettings/TagManager.asset")[0]);
+        SerializedProperty layersProp = tagManager.FindProperty("layers");
+        for (int i = 8; i <= 31; i++)
+        {
+            SerializedProperty sp = layersProp.GetArrayElementAtIndex(i);
+            if (string.IsNullOrEmpty(sp.stringValue))
+            {
+                sp.stringValue = "Interactable";
+                tagManager.ApplyModifiedProperties();
+                Debug.Log($"[AnomalyBuilder] 'Interactable' レイヤーを User Layer {i} に追加しました");
+                return i;
+            }
+        }
+        Debug.LogError("[AnomalyBuilder] 空きレイヤーが見つかりません。デフォルト(0)を使用します");
+        return 0;
     }
 
     static void FixInteractionLayer(int layer)

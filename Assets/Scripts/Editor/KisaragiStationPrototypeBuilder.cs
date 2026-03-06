@@ -507,12 +507,13 @@ public class KisaragiStationPrototypeBuilder
         // ── InteractionSystem + ReticleHUD をここで確実に追加 ──
         var iSys      = player.GetComponent<InteractionSystem>() ?? player.AddComponent<InteractionSystem>();
         var reticleHUD = player.GetComponent<ReticleHUD>()      ?? player.AddComponent<ReticleHUD>();
+        player.GetComponent<ProgressHUD>() ?? player.AddComponent<ProgressHUD>();
         var iSysSO = new SerializedObject(iSys);
         iSysSO.FindProperty("reticleHUD").objectReferenceValue    = reticleHUD;
         iSysSO.FindProperty("playerCamera").objectReferenceValue  = cam.GetComponent<Camera>();
         iSysSO.FindProperty("interactDistance").floatValue        = 8f;
         iSysSO.ApplyModifiedProperties();
-        Debug.Log($"[StationPrototype] Player に InteractionSystem + ReticleHUD を追加しました");
+        Debug.Log($"[StationPrototype] Player に InteractionSystem + ReticleHUD + ProgressHUD を追加しました");
 
         // ── ホーム反響リバーブゾーン（コンクリートホールのカツカツ反響）──
         var reverbGO = new GameObject("Platform_ReverbZone");
